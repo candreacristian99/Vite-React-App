@@ -81,8 +81,11 @@ function LoginScreen({ onSuccess }) {
                   disabled={isSending}
                   type="submit"
                 >
-                  {isSending ? 'Sending link...' : 'Send magic link'}
+                  {isSending ? 'Sending link...' : 'Sign in'}
                 </button>
+                <p className="text-center text-xs text-slate-500">
+                  We&apos;ll email you a secure sign-in link.
+                </p>
               </form>
 
               {success && (
