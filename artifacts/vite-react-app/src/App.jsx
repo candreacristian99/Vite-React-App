@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 
 import { supabase } from './lib/supabase.js';
+import Listings from './pages/Listings.jsx';
+
+
 
 function LoginScreen({ onSuccess }) {
   const [email, setEmail] = useState('');
@@ -355,7 +358,12 @@ function ProfileScreen({ user, onSignOut, isSigningOut, authError }) {
               </button>
             </div>
           </form>
-        </section>
+        </section>        {profile.is_seller && (
+          <div className="mt-8">
+            <Listings user={user} />
+          </div>
+        )}
+
       </div>
     </main>
   );
