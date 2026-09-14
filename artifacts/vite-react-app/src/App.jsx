@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { supabase } from './lib/supabase.js';
 import Listings from './pages/Listings.jsx';
+import Browse from './pages/Browse.jsx';
 
 
 
@@ -358,7 +359,11 @@ function ProfileScreen({ user, onSignOut, isSigningOut, authError }) {
               </button>
             </div>
           </form>
-        </section>        {profile.is_seller && (
+        </section>   
+        <div className="mt-8">
+          <Browse />
+        </div>
+        {profile.is_seller && (
           <div className="mt-8">
             <Listings user={user} />
           </div>
