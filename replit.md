@@ -1,6 +1,6 @@
-# [Project name]
+# Kandera
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Kandera is a minimal Vite + React homepage with a centered brand name on a turquoise-to-blue gradient.
 
 ## Run & Operate
 
