@@ -113,27 +113,248 @@ function LoginScreen({ onSuccess }) {
   );
 }
 
-function SignedInScreen({ email, onSignOut, isSigningOut }) {
+const emptyProfile = {
+  display_name: '',
+  username: '',
+  bio: '',
+  country: '',
+  city: '',
+  is_seller: false,
+};
+
+function ProfileScreen({ user, onSignOut, isSigningOut, authError }) {
+  const [profile, setProfile] = useState(emptyProfile);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadProfile() {
+      const { data, error: profileError } = await supabase
+        .from('profiles')
+        .select('display_name, username, bio, country, city, is_seller')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!isMounted) return;
+
+      if (profileError) {
+        setError(profileError.message || 'Unable to load your profile.');
+      } else if (data) {
+        setProfile({
+          ...emptyProfile,
+          ...data,
+          is_seller: Boolean(data.is_seller),
+        });
+      }
+
+      setIsLoading(false);
+    }
+
+    loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user.id]);
+
+  function updateField(field, value) {
+    setProfile((currentProfile) => ({
+      ...currentProfile,
+      [field]: value,
+    }));
+    setSuccess('');
+    setError('');
+  }
+
+  async function handleSave(event) {
+    event.preventDefault();
+    setIsSaving(true);
+    setSuccess('');
+    setError('');
+
+    const { data, error: saveError } = await supabase
+      .from('profiles')
+      .update({
+        display_name: profile.display_name,
+        username: profile.username,
+        bio: profile.bio,
+        country: profile.country,
+        city: profile.city,
+        is_seller: profile.is_seller,
+      })
+      .eq('id', user.id)
+      .select('display_name, username, bio, country, city, is_seller')
+      .single();
+
+    setIsSaving(false);
+
+    if (saveError) {
+      setError(saveError.message || 'Unable to save your profile. Please try again.');
+      return;
+    }
+
+    if (data) {
+      setProfile({
+        ...emptyProfile,
+        ...data,
+        is_seller: Boolean(data.is_seller),
+      });
+    }
+    setSuccess('Your profile has been saved.');
+  }
+
+  if (isLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-bg text-primary-dark">
+        <p className="text-sm font-semibold uppercase tracking-[0.2em]">Loading your profile...</p>
+      </main>
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-bg px-6 py-12 text-text">
-      <div className="mx-auto flex min-h-[calc(100vh-6rem)] max-w-4xl items-center justify-center">
-        <section className="w-full max-w-lg rounded-3xl bg-white p-8 text-center shadow-xl shadow-primary-dark/10 sm:p-12">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary-dark text-2xl font-bold text-white shadow-lg shadow-primary/20">
-            K
+    <main className="min-h-screen bg-bg px-6 py-10 text-text sm:py-14">
+      <div className="mx-auto max-w-4xl">
+        <header className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary-dark">
+              Kandera
+            </p>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Your profile</h1>
+            <p className="mt-2 text-sm text-slate-500">
+              Keep your personal details up to date.
+            </p>
           </div>
-          <p className="mt-8 text-sm font-semibold uppercase tracking-[0.2em] text-primary-dark">
-            You&apos;re signed in
-          </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-text">Welcome to Kandera</h1>
-          <p className="mt-4 break-words text-slate-500">{email}</p>
           <button
-            className="mt-8 rounded-xl border border-slate-200 px-5 py-3 font-semibold text-text transition hover:border-primary hover:text-primary-dark focus:outline-none focus:ring-4 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
+            className="self-start rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-text shadow-sm transition hover:border-primary hover:text-primary-dark focus:outline-none focus:ring-4 focus:ring-primary/15 sm:self-auto"
             disabled={isSigningOut}
             onClick={onSignOut}
             type="button"
           >
             {isSigningOut ? 'Signing out...' : 'Sign out'}
           </button>
+        </header>
+
+        <section className="rounded-3xl bg-white p-6 shadow-xl shadow-primary-dark/10 sm:p-10">
+          <div className="mb-8 flex flex-col gap-4 rounded-2xl bg-gradient-to-br from-primary to-primary-dark p-6 text-white sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/75">
+                Signed in as
+              </p>
+              <p className="mt-2 break-all text-lg font-semibold">{user.email}</p>
+            </div>
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-2xl font-bold">
+              {(profile.display_name || user.email || 'K').charAt(0).toUpperCase()}
+            </div>
+          </div>
+
+          <form className="space-y-6" onSubmit={handleSave}>
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-text" htmlFor="display_name">
+                  Display name
+                </label>
+                <input
+                  className="w-full rounded-xl border border-slate-200 bg-bg px-4 py-3 text-text outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/15"
+                  id="display_name"
+                  onChange={(event) => updateField('display_name', event.target.value)}
+                  placeholder="Your name"
+                  type="text"
+                  value={profile.display_name}
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-text" htmlFor="username">
+                  Username
+                </label>
+                <input
+                  className="w-full rounded-xl border border-slate-200 bg-bg px-4 py-3 text-text outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/15"
+                  id="username"
+                  onChange={(event) => updateField('username', event.target.value)}
+                  placeholder="your-username"
+                  type="text"
+                  value={profile.username}
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-text" htmlFor="country">
+                  Country
+                </label>
+                <input
+                  className="w-full rounded-xl border border-slate-200 bg-bg px-4 py-3 text-text outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/15"
+                  id="country"
+                  onChange={(event) => updateField('country', event.target.value)}
+                  placeholder="Your country"
+                  type="text"
+                  value={profile.country}
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-text" htmlFor="city">
+                  City
+                </label>
+                <input
+                  className="w-full rounded-xl border border-slate-200 bg-bg px-4 py-3 text-text outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/15"
+                  id="city"
+                  onChange={(event) => updateField('city', event.target.value)}
+                  placeholder="Your city"
+                  type="text"
+                  value={profile.city}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-text" htmlFor="bio">
+                Bio
+              </label>
+              <textarea
+                className="min-h-32 w-full resize-y rounded-xl border border-slate-200 bg-bg px-4 py-3 text-text outline-none transition placeholder:text-slate-400 focus:border-primary focus:ring-4 focus:ring-primary/15"
+                id="bio"
+                onChange={(event) => updateField('bio', event.target.value)}
+                placeholder="Tell people a little about yourself"
+                value={profile.bio}
+              />
+            </div>
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 bg-bg p-4 transition hover:border-primary/50">
+              <input
+                checked={profile.is_seller}
+                className="mt-0.5 h-5 w-5 rounded border-slate-300 text-primary accent-primary focus:ring-primary"
+                onChange={(event) => updateField('is_seller', event.target.checked)}
+                type="checkbox"
+              />
+              <span>
+                <span className="block text-sm font-semibold text-text">
+                  I want to sell on Kandera
+                </span>
+                <span className="mt-1 block text-sm text-slate-500">
+                  Let people know you&apos;re interested in selling.
+                </span>
+              </span>
+            </label>
+
+            <div className="flex flex-col gap-4 border-t border-slate-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-2 text-sm" aria-live="polite">
+                {success && <p className="text-primary-dark">{success}</p>}
+                {error && <p className="text-rose-700">{error}</p>}
+                {authError && <p className="text-rose-700">{authError}</p>}
+              </div>
+              <button
+                className="rounded-xl bg-primary px-6 py-3 font-semibold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-dark focus:outline-none focus:ring-4 focus:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isSaving}
+                type="submit"
+              >
+                {isSaving ? 'Saving changes...' : 'Save changes'}
+              </button>
+            </div>
+          </form>
         </section>
       </div>
     </main>
@@ -196,8 +417,9 @@ function App() {
 
   if (session?.user) {
     return (
-      <SignedInScreen
-        email={session.user.email}
+      <ProfileScreen
+        authError={authError}
+        user={session.user}
         isSigningOut={isSigningOut}
         onSignOut={handleSignOut}
       />
