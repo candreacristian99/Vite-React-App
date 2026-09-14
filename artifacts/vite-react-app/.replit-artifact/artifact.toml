@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Vite React App"
+description = "A clean Vite + React starter application ready for building a web experience."
+version = "1.0.0"
+id = "artifacts/vite-react-app"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23041
+
+[services.development]
+run = "pnpm --filter @workspace/vite-react-app run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/vite-react-app", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/vite-react-app/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23041"
+BASE_PATH = "/"
