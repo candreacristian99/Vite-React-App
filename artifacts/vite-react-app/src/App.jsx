@@ -5,44 +5,107 @@ import Listings from './pages/Listings.jsx';
 import Messages from './pages/Messages.jsx';
 
 function Login() {
+  const [mode, setMode] = useState('signin');
   const [email, setEmail] = useState('');
-  const [sending, setSending] = useState(false);
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  const [error, setError] = useState('');
 
   async function submit(e) {
     e.preventDefault();
-    setSending(true);
+    setBusy(true);
     setMsg('');
-    const { error } = await supabase.auth.signInWithOtp({ email: email.trim() });
-    setSending(false);
-    setMsg(error ? error.message : 'Check your inbox for the sign-in link.');
+    setError('');
+
+    if (mode === 'signup') {
+      const { error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+      });
+      setBusy(false);
+      if (error) return setError(error.message);
+      setMsg('Account created. Check your inbox to confirm your email.');
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    setBusy(false);
+    if (error) setError(error.message);
+  }
+
+  async function resetPassword() {
+    if (!email.trim()) return setError('Enter your email first.');
+    setBusy(true);
+    setError('');
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+    setBusy(false);
+    if (error) return setError(error.message);
+    setMsg('Password reset link sent to your inbox.');
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-bg px-6">
+    <main className="flex min-h-screen items-center justify-center bg-bg px-6 py-12">
       <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xl">
         <div className="mb-8 rounded-2xl bg-gradient-to-br from-primary to-primary-dark p-8 text-white">
           <p className="text-sm font-semibold uppercase tracking-widest text-white/75">Kandera</p>
-          <h1 className="mt-6 text-3xl font-bold">Welcome back.</h1>
+          <h1 className="mt-6 text-3xl font-bold">
+            {mode === 'signin' ? 'Welcome back.' : 'Create your account.'}
+          </h1>
         </div>
+
         <form onSubmit={submit} className="space-y-4">
-          <input
-            className="w-full rounded-xl border border-slate-200 bg-bg px-4 py-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
-            type="email" required placeholder="you@example.com"
-            value={email} onChange={(e) => setEmail(e.target.value)}
-          />
+          <div>
+            <label className="mb-2 block text-sm font-medium">Email address</label>
+            <input
+              className="w-full rounded-xl border border-slate-200 bg-bg px-4 py-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
+              type="email" required autoComplete="email"
+              placeholder="you@example.com"
+              value={email} onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium">Password</label>
+            <input
+              className="w-full rounded-xl border border-slate-200 bg-bg px-4 py-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
+              type="password" required minLength={6}
+              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              placeholder="At least 6 characters"
+              value={password} onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
           <button
             className="w-full rounded-xl bg-primary px-4 py-3 font-semibold text-white transition hover:bg-primary-dark disabled:opacity-60"
-            disabled={sending} type="submit"
+            disabled={busy} type="submit"
           >
-            {sending ? 'Sending...' : 'Sign in'}
+            {busy ? 'Please wait...' : mode === 'signin' ? 'Log in' : 'Sign up'}
           </button>
         </form>
-        {msg && <p className="mt-4 text-sm text-slate-600">{msg}</p>}
+
+        {msg && <p className="mt-4 rounded-xl bg-primary/10 px-4 py-3 text-sm text-primary-dark">{msg}</p>}
+        {error && <p className="mt-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
+
+        <div className="mt-6 flex flex-col gap-2 text-center text-sm">
+          <button type="button" className="font-semibold text-primary-dark"
+            onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(''); setMsg(''); }}>
+            {mode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Log in'}
+          </button>
+          {mode === 'signin' && (
+            <button type="button" className="text-slate-500" onClick={resetPassword}>
+              Forgot your password?
+            </button>
+          )}
+        </div>
       </div>
     </main>
   );
 }
+
 
 const emptyProfile = {
   display_name: '', username: '', bio: '',
