@@ -192,18 +192,63 @@ function Profile({ user }) {
     </section>
   );
 }
+function SetPassword() {
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function submit(e) {
+    e.preventDefault();
+    setBusy(true);
+    setError('');
+    const { error } = await supabase.auth.updateUser({ password });
+    setBusy(false);
+    if (error) return setError(error.message);
+    window.location.hash = '';
+    window.location.reload();
+  }
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-bg px-6">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xl">
+        <h1 className="text-2xl font-bold">Set a new password</h1>
+        <p className="mt-2 text-sm text-slate-500">
+          At least 8 characters, with one uppercase letter, one lowercase letter and one number.
+        </p>
+        <form onSubmit={submit} className="mt-6 space-y-4">
+          <input
+            className="w-full rounded-xl border border-slate-200 bg-bg px-4 py-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
+            type="password" required minLength={8}
+            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}"
+            placeholder="New password"
+            value={password} onChange={(e) => setPassword(e.target.value)}
+          />
+          <button
+            className="w-full rounded-xl bg-primary px-4 py-3 font-semibold text-white transition hover:bg-primary-dark disabled:opacity-60"
+            disabled={busy} type="submit">
+            {busy ? 'Saving...' : 'Save password'}
+          </button>
+        </form>
+        {error && <p className="mt-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
+      </div>
+    </main>
+  );
+}
 
 function App() {
   const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('browse');
-
+  const [recovery, setRecovery] = useState(
+    window.location.hash.includes('type=recovery')
+    );
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data?.session ?? null);
       setLoading(false);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
+        if (event === 'PASSWORD_RECOVERY') setRecovery(true);
+
       setSession(s);
       setLoading(false);
     });
@@ -211,7 +256,10 @@ function App() {
   }, []);
 
   if (loading) return <main className="flex min-h-screen items-center justify-center bg-bg">Loading...</main>;
-  if (!session?.user) return <Login />;
+ 
+  if (recovery && session?.user) return <SetPassword />;
+
+if (!session?.user) return <Login />;
 
   const tabs = [
     { id: 'browse', label: 'Discover' },    { id: 'messages', label: 'Messages' },
