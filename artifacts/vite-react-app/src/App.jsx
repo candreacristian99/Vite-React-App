@@ -286,6 +286,10 @@ function SetPassword() {
 
 function App() {
   const [session, setSession] = useState(null);
+  
+  const [loading, setLoading] = useState(true);
+
+
   const [tab, setTab] = useState('browse');
   const [recovery, setRecovery] = useState(
     window.location.hash.includes('type=recovery')
