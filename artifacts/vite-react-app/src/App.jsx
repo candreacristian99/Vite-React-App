@@ -72,7 +72,11 @@ function Login() {
             <label className="mb-2 block text-sm font-medium">Password</label>
             <input
               className="w-full rounded-xl border border-slate-200 bg-bg px-4 py-3 outline-none focus:border-primary focus:ring-4 focus:ring-primary/15"
-              type="password" required minLength={6}
+              type="password" required minLength={8}
+              pattern={mode === 'signup' ? '(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}' : undefined}
+              title="At least 8 characters, with one uppercase letter, one lowercase letter and one number."
+
+
               autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
               placeholder="At least 6 characters"
               value={password} onChange={(e) => setPassword(e.target.value)}
