@@ -1,3 +1,4 @@
+import Feed from './pages/Feed.jsx';
 import { compressImage } from './lib/compress.js';
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase.js';
@@ -294,7 +295,7 @@ function App() {
   const [loading, setLoading] = useState(true);
 
 
-  const [tab, setTab] = useState('browse');
+  const [tab, setTab] = useState('feed');
   const [recovery, setRecovery] = useState(
     window.location.hash.includes('type=recovery')
     );
@@ -319,10 +320,12 @@ function App() {
 if (!session?.user) return <Login />;
 
   const tabs = [
-    { id: 'browse', label: 'Discover' },    { id: 'messages', label: 'Messages' },
-
+    { id: 'feed', label: 'Feed' },
+    { id: 'browse', label: 'Discover' },
+    { id: 'messages', label: 'Messages' },
     { id: 'profile', label: 'Profile' },
   ];
+
 
   return (
     <main className="min-h-screen bg-bg pb-24 text-text">
@@ -331,7 +334,10 @@ if (!session?.user) return <Login />;
       </header>
 
       <div className="mx-auto max-w-4xl px-4 py-6">
-        {tab === 'browse' && <Browse />}        {tab === 'messages' && <Messages user={session.user} />}
+        {tab === 'feed' && <Feed user={session.user} />}
+        {tab === 'browse' && <Browse />}
+        {tab === 'messages' && <Messages user={session.user} />}
+
 
         {tab === 'profile' && <Profile user={session.user} />}
       </div>
