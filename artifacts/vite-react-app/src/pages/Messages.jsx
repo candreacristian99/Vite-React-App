@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase.js';
 import { compressImage } from '../lib/compress.js';
 
 export default function Messages({ user }) {
+  const [tab, setTab] = useState('market');
   const [requests, setRequests] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [active, setActive] = useState(null);
@@ -32,7 +33,7 @@ export default function Messages({ user }) {
   async function loadConversations() {
     const { data } = await supabase
       .from('conversations')
-      .select('id, buyer_id, seller_id')
+      .select('id, buyer_id, seller_id, listing_id')
       .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
       .order('created_at', { ascending: false });
     setConversations(data || []);
@@ -93,11 +94,36 @@ export default function Messages({ user }) {
     openChat(active);
   }
 
+  const marketConvos = conversations.filter((c) => c.listing_id);
+  const personalConvos = conversations.filter((c) => !c.listing_id);
+  const visibleConvos = tab === 'market' ? marketConvos : personalConvos;
+
   return (
     <section className="rounded-3xl bg-white p-6 shadow-xl sm:p-10">
       <h2 className="text-2xl font-bold">Messages</h2>
 
-      {requests.length > 0 && (
+      {!active && (
+        <div className="mt-6 flex gap-2 rounded-xl bg-bg p-1">
+          <button
+            onClick={() => setTab('market')}
+            className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
+              tab === 'market' ? 'bg-primary text-white' : 'text-slate-500'
+            }`}
+          >
+            Marketplace
+          </button>
+          <button
+            onClick={() => setTab('personal')}
+            className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
+              tab === 'personal' ? 'bg-primary text-white' : 'text-slate-500'
+            }`}
+          >
+            Personal
+          </button>
+        </div>
+      )}
+
+      {!active && tab === 'personal' && requests.length > 0 && (
         <div className="mt-6">
           <h3 className="text-sm font-semibold uppercase tracking-widest text-primary-dark">
             Friend requests
@@ -125,12 +151,14 @@ export default function Messages({ user }) {
       )}
 
       {!active ? (
-        <div className="mt-8">
-          {conversations.length === 0 ? (
-            <p className="text-sm text-slate-500">No conversations yet.</p>
+        <div className="mt-6">
+          {visibleConvos.length === 0 ? (
+            <p className="text-sm text-slate-500">
+              {tab === 'market' ? 'No marketplace conversations yet.' : 'No personal conversations yet.'}
+            </p>
           ) : (
             <ul className="space-y-2">
-              {conversations.map((c) => (
+              {visibleConvos.map((c) => (
                 <li key={c.id}>
                   <button onClick={() => openChat(c)}
                     className="w-full rounded-2xl border border-slate-200 p-4 text-left transition hover:border-primary">
