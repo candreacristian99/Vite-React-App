@@ -1,8 +1,11 @@
+import { compressImage } from './lib/compress.js';
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase.js';
 import Browse from './pages/Browse.jsx';
 import Listings from './pages/Listings.jsx';
 import Messages from './pages/Messages.jsx';
+
+
 
 function Login() {
   const [mode, setMode] = useState('signin');
@@ -141,13 +144,14 @@ const [uploading, setUploading] = useState(false)
     setMsg('');
   }
   async function uploadAvatar(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const raw = e.target.files?.[0];
+    if (!raw) return;
     setUploading(true);
     setMsg('');
 
-    const ext = file.name.split('.').pop();
-    const path = `${user.id}/avatar.${ext}`;
+    const file = await compressImage(raw, 400);
+    const path = `${user.id}/avatar.jpg`;
+
 
     const { error: upErr } = await supabase.storage
       .from('avatars')

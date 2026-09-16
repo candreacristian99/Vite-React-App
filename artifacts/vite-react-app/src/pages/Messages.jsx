@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
+import { compressImage } from '../lib/compress.js';
 
 export default function Messages({ user }) {
   const [requests, setRequests] = useState([]);
@@ -7,6 +8,7 @@ export default function Messages({ user }) {
   const [active, setActive] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     loadRequests();
@@ -56,6 +58,38 @@ export default function Messages({ user }) {
       sender_id: user.id,
       body,
     });
+    openChat(active);
+  }
+
+  async function sendImage(e) {
+    const raw = e.target.files?.[0];
+    if (!raw || !active) return;
+    setSending(true);
+
+    const file = await compressImage(raw, 1200);
+    const path = `${user.id}/${Date.now()}.jpg`;
+
+    const { error: upErr } = await supabase.storage
+      .from('messages')
+      .upload(path, file);
+
+    if (upErr) {
+      setSending(false);
+      alert(upErr.message);
+      return;
+    }
+
+    const { data } = await supabase.storage
+      .from('messages')
+      .createSignedUrl(path, 60 * 60 * 24 * 365);
+
+    await supabase.from('messages').insert({
+      conversation_id: active.id,
+      sender_id: user.id,
+      image_url: data?.signedUrl || null,
+    });
+
+    setSending(false);
     openChat(active);
   }
 
@@ -121,11 +155,19 @@ export default function Messages({ user }) {
                     ? 'ml-auto bg-primary text-white'
                     : 'bg-slate-100'
                 }`}>
+                {m.image_url && (
+                  <img src={m.image_url} alt="" className="mb-2 max-h-60 rounded-xl object-cover" />
+                )}
                 {m.body}
               </li>
             ))}
           </ul>
           <form onSubmit={send} className="mt-4 flex gap-2">
+            <label className="flex cursor-pointer items-center rounded-xl border border-slate-200 px-4 text-lg">
+              📷
+              <input type="file" accept="image/*" className="hidden"
+                onChange={sendImage} disabled={sending} />
+            </label>
             <input className="flex-1 rounded-xl border border-slate-200 bg-bg px-4 py-3 outline-none focus:border-primary"
               placeholder="Write a message..." value={text}
               onChange={(e) => setText(e.target.value)} />
