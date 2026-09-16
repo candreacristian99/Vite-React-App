@@ -112,20 +112,23 @@ function Login() {
 }
 
 
-const emptyProfile = {
-  display_name: '', username: '', bio: '',
-  country: '', city: '', is_seller: false,
-};
+  const emptyProfile = {
+    display_name: '', username: '', bio: '',
+    country: '', city: '', is_seller: false,
+    avatar_url: '',
+  };
+
 
 function Profile({ user }) {
   const [profile, setProfile] = useState(emptyProfile);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState('');
-
+  const [msg, setMsg] = useState(''); 
+const [uploading, setUploading] = useState(false)
   useEffect(() => {
     supabase.from('profiles')
-      .select('display_name, username, bio, country, city, is_seller')
+      .select('display_name, username, bio, country, city, is_seller, avatar_url')
+
       .eq('id', user.id).maybeSingle()
       .then(({ data }) => {
         if (data) setProfile({ ...emptyProfile, ...data, is_seller: !!data.is_seller });
@@ -136,6 +139,33 @@ function Profile({ user }) {
   function set(field, value) {
     setProfile((p) => ({ ...p, [field]: value }));
     setMsg('');
+  }
+  async function uploadAvatar(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setMsg('');
+
+    const ext = file.name.split('.').pop();
+    const path = `${user.id}/avatar.${ext}`;
+
+    const { error: upErr } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true });
+
+    if (upErr) {
+      setUploading(false);
+      setMsg(upErr.message);
+      return;
+    }
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(path);
+    const url = `${data.publicUrl}?t=${Date.now()}`;
+
+    await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id);
+    setProfile((p) => ({ ...p, avatar_url: url }));
+    setUploading(false);
+    setMsg('Photo updated.');
   }
 
   async function save(e) {
@@ -151,6 +181,25 @@ function Profile({ user }) {
   return (
     <section className="rounded-3xl bg-white p-6 shadow-xl sm:p-10">
       <h2 className="text-2xl font-bold">Your profile</h2>
+      
+      <div className="mt-6 flex items-center gap-4">
+        <div className="h-20 w-20 overflow-hidden rounded-full bg-gradient-to-br from-primary to-primary-dark">
+          {profile.avatar_url ? (
+            <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span className="flex h-full w-full items-center justify-center text-2xl font-bold text-white">
+              {(profile.display_name || 'K').charAt(0).toUpperCase()}
+            </span>
+          )}
+        </div>
+        <label className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold transition hover:border-primary">
+          {uploading ? 'Uploading...' : 'Change photo'}
+          <input type="file" accept="image/*" className="hidden"
+            onChange={uploadAvatar} disabled={uploading} />
+        </label>
+      </div>
+
+
       <form onSubmit={save} className="mt-6 space-y-5">
         <div className="grid gap-5 sm:grid-cols-2">
           <input className="rounded-xl border border-slate-200 bg-bg px-4 py-3 outline-none focus:border-primary"
