@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase.js';
 import Browse from './pages/Browse.jsx';
 import Listings from './pages/Listings.jsx';
+import Messages from './pages/Messages.jsx';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -145,7 +146,8 @@ function App() {
   if (!session?.user) return <Login />;
 
   const tabs = [
-    { id: 'browse', label: 'Discover' },
+    { id: 'browse', label: 'Discover' },    { id: 'messages', label: 'Messages' },
+
     { id: 'profile', label: 'Profile' },
   ];
 
@@ -156,7 +158,8 @@ function App() {
       </header>
 
       <div className="mx-auto max-w-4xl px-4 py-6">
-        {tab === 'browse' && <Browse />}
+        {tab === 'browse' && <Browse />}        {tab === 'messages' && <Messages user={session.user} />}
+
         {tab === 'profile' && <Profile user={session.user} />}
       </div>
 
