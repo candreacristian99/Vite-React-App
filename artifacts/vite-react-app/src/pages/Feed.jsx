@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
 import { compressImage } from '../lib/compress.js';
 
+const REACTIONS = [
+  { type: 'inspiring', emoji: '✨', label: 'Inspiring' },
+  { type: 'want_to_go', emoji: '📍', label: 'Want to go' },
+  { type: 'recommend', emoji: '🤝', label: 'Recommend' },
+];
+
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -22,6 +28,14 @@ export default function Feed({ user }) {
   const [city, setCity] = useState('');
   const [uploading, setUploading] = useState(false);
 
+  const [reactionCounts, setReactionCounts] = useState({});
+  const [myReactions, setMyReactions] = useState({});
+  const [openReactions, setOpenReactions] = useState(null);
+
+  const [comments, setComments] = useState({});
+  const [openComments, setOpenComments] = useState(null);
+  const [commentText, setCommentText] = useState('');
+
   useEffect(() => {
     loadPosts();
     if (navigator.geolocation) {
@@ -41,6 +55,71 @@ export default function Feed({ user }) {
       .limit(50);
     setPosts(data || []);
     setLoading(false);
+    if (data?.length) loadReactions(data.map((p) => p.id));
+  }
+
+  async function loadReactions(postIds) {
+    const { data } = await supabase
+      .from('post_reactions')
+      .select('post_id, user_id, type')
+      .in('post_id', postIds);
+
+    const counts = {};
+    const mine = {};
+    (data || []).forEach((r) => {
+      counts[r.post_id] = counts[r.post_id] || {};
+      counts[r.post_id][r.type] = (counts[r.post_id][r.type] || 0) + 1;
+      if (r.user_id === user.id) mine[r.post_id] = r.type;
+    });
+    setReactionCounts(counts);
+    setMyReactions(mine);
+  }
+
+  async function react(postId, type) {
+    setOpenReactions(null);
+    const current = myReactions[postId];
+
+    if (current === type) {
+      await supabase.from('post_reactions').delete()
+        .eq('post_id', postId).eq('user_id', user.id);
+    } else if (current) {
+      await supabase.from('post_reactions').update({ type })
+        .eq('post_id', postId).eq('user_id', user.id);
+    } else {
+      await supabase.from('post_reactions').insert({
+        post_id: postId, user_id: user.id, type,
+      });
+    }
+    loadReactions(posts.map((p) => p.id));
+  }
+
+  async function loadComments(postId) {
+    const { data } = await supabase
+      .from('post_comments')
+      .select('id, body, author_id, created_at, profiles(display_name, username)')
+      .eq('post_id', postId)
+      .order('created_at');
+    setComments((c) => ({ ...c, [postId]: data || [] }));
+  }
+
+  function toggleComments(postId) {
+    if (openComments === postId) {
+      setOpenComments(null);
+    } else {
+      setOpenComments(postId);
+      if (!comments[postId]) loadComments(postId);
+    }
+  }
+
+  async function sendComment(postId) {
+    if (!commentText.trim()) return;
+    await supabase.from('post_comments').insert({
+      post_id: postId,
+      author_id: user.id,
+      body: commentText.trim(),
+    });
+    setCommentText('');
+    loadComments(postId);
   }
 
   async function createPost(e) {
@@ -125,18 +204,103 @@ export default function Feed({ user }) {
         <p className="mt-8 text-sm text-slate-500">No posts yet. Be the first to share something.</p>
       ) : (
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          {sortedPosts.map((p) => (
-            <article key={p.id} className="overflow-hidden rounded-2xl border border-slate-200">
-              <img src={p.image_url} alt="" className="h-48 w-full object-cover" />
-              <div className="p-4">
-                <p className="text-sm font-semibold">
-                  {p.profiles?.display_name || p.profiles?.username || 'Someone'}
-                </p>
-                {p.caption && <p className="mt-1 text-sm text-slate-600">{p.caption}</p>}
-                {p.city && <p className="mt-2 text-xs text-slate-400">📍 {p.city}</p>}
-              </div>
-            </article>
-          ))}
+          {sortedPosts.map((p) => {
+            const counts = reactionCounts[p.id] || {};
+            const mine = myReactions[p.id];
+            const total = Object.values(counts).reduce((a, b) => a + b, 0);
+
+            return (
+              <article key={p.id} className="overflow-hidden rounded-2xl border border-slate-200">
+                <img src={p.image_url} alt="" className="h-48 w-full object-cover" />
+                <div className="p-4">
+                  <p className="text-sm font-semibold">
+                    {p.profiles?.display_name || p.profiles?.username || 'Someone'}
+                  </p>
+                  {p.caption && (
+                    <div className="mt-1">
+                      <p className="text-sm text-slate-600">{p.caption}</p>
+                      <a
+                        href={`https://translate.google.com/?sl=auto&tl=${navigator.language.slice(0, 2)}&text=${encodeURIComponent(p.caption)}&op=translate`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-block text-xs font-semibold text-primary-dark underline"
+                      >
+                        Translate
+                      </a>
+                    </div>
+                  )}
+                  {p.city && <p className="mt-2 text-xs text-slate-400">📍 {p.city}</p>}
+
+                  {total > 0 && (
+                    <div className="mt-3 flex gap-2 text-xs text-slate-500">
+                      {REACTIONS.filter((r) => counts[r.type]).map((r) => (
+                        <span key={r.type}>{r.emoji} {counts[r.type]}</span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="relative mt-3 flex items-center gap-2 border-t border-slate-100 pt-3">
+                    <button
+                      onClick={() => setOpenReactions(openReactions === p.id ? null : p.id)}
+                      className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${
+                        mine ? 'bg-primary/10 text-primary-dark' : 'bg-bg text-slate-500'
+                      }`}
+                    >
+                      {mine ? REACTIONS.find((r) => r.type === mine)?.emoji : '✨'} React
+                    </button>
+                    <button
+                      onClick={() => toggleComments(p.id)}
+                      className="rounded-full bg-bg px-3 py-1.5 text-sm font-semibold text-slate-500"
+                    >
+                      💬 Comment
+                    </button>
+
+                    {openReactions === p.id && (
+                      <div className="absolute bottom-full left-0 mb-2 flex gap-1 rounded-full bg-white p-1.5 shadow-lg">
+                        {REACTIONS.map((r) => (
+                          <button
+                            key={r.type}
+                            onClick={() => react(p.id, r.type)}
+                            className="rounded-full p-2 text-lg transition hover:scale-125"
+                            title={r.label}
+                          >
+                            {r.emoji}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {openComments === p.id && (
+                    <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+                      {(comments[p.id] || []).map((c) => (
+                        <div key={c.id} className="rounded-xl bg-bg px-3 py-2 text-sm">
+                          <span className="font-semibold">
+                            {c.profiles?.display_name || c.profiles?.username || 'Someone'}:
+                          </span>{' '}
+                          {c.body}
+                        </div>
+                      ))}
+                      <div className="flex gap-2">
+                        <input
+                          value={commentText}
+                          onChange={(e) => setCommentText(e.target.value)}
+                          placeholder="Write a comment..."
+                          className="flex-1 rounded-xl border border-slate-200 bg-bg px-3 py-2 text-sm outline-none focus:border-primary"
+                        />
+                        <button
+                          onClick={() => sendComment(p.id)}
+                          className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
+                        >
+                          Send
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </section>
