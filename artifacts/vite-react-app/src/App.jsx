@@ -21,6 +21,14 @@ const GalaxyStyles = () => (
       from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
+    @keyframes logoMorph {
+      0% { opacity: 0; transform: scale(0.7) rotate(-8deg); filter: blur(6px); }
+      100% { opacity: 1; transform: scale(1) rotate(0); filter: blur(0); }
+    }
+    @keyframes orbit {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
     .page-enter { animation: fadeUp 0.4s ease-out; }
   `}</style>
 );
@@ -57,6 +65,25 @@ function StarField({ count = 60 }) {
   );
 }
 
+function GalaxyMark() {
+  return (
+    <svg width="120" height="28" viewBox="0 0 120 28" className="opacity-70">
+      <ellipse cx="60" cy="14" rx="52" ry="11" fill="none" stroke="#a78bfa" strokeWidth="1" opacity="0.5" />
+      <ellipse cx="60" cy="14" rx="38" ry="7" fill="none" stroke="#7c3aed" strokeWidth="1" opacity="0.7"
+        style={{ transformOrigin: '60px 14px', animation: 'orbit 12s linear infinite' }} />
+      <circle cx="60" cy="14" r="4" fill="url(#coreGrad)" />
+      <circle cx="112" cy="14" r="2" fill="#c4b5fd" />
+      <circle cx="22" cy="10" r="1.5" fill="#93c5fd" />
+      <defs>
+        <radialGradient id="coreGrad">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="100%" stopColor="#7c3aed" />
+        </radialGradient>
+      </defs>
+    </svg>
+  );
+}
+
 function Login() {
   const [mode, setMode] = useState('signin');
   const [email, setEmail] = useState('');
@@ -64,6 +91,12 @@ function Login() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
+  const [logoState, setLogoState] = useState(true);
+
+  useEffect(() => {
+    const cycle = setInterval(() => setLogoState((s) => !s), 3000);
+    return () => clearInterval(cycle);
+  }, []);
 
   async function submit(e) {
     e.preventDefault();
@@ -100,11 +133,19 @@ function Login() {
       <StarField count={80} />
 
       <div className="relative z-10 w-full max-w-md">
-        <div className="mb-8 text-center" style={{ animation: 'float 6s ease-in-out infinite' }}>
-          <h1 className="bg-gradient-to-r from-[#c4b5fd] via-white to-[#93c5fd] bg-clip-text text-5xl font-black tracking-tight text-transparent">
-            KANDERA
-          </h1>
-          <p className="mt-3 text-sm font-medium tracking-[0.3em] text-[#a78bfa]">A NEW GALAXY</p>
+        <div className="mb-10 flex flex-col items-center">
+          <div className="flex h-16 items-center justify-center">
+            <h1
+              key={logoState}
+              className="bg-gradient-to-r from-[#c4b5fd] via-white to-[#93c5fd] bg-clip-text text-5xl font-black tracking-tight text-transparent"
+              style={{ animation: 'logoMorph 0.6s ease-out' }}
+            >
+              {logoState ? 'KANDERA' : 'K'}
+            </h1>
+          </div>
+          <div className="mt-4">
+            <GalaxyMark />
+          </div>
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
@@ -377,10 +418,13 @@ function App() {
       <GalaxyStyles />
       <StarField count={50} />
 
-      <header className="relative z-10 px-6 pb-2 pt-8">
+      <header className="relative z-10 flex items-center justify-between px-6 pb-2 pt-8">
         <h1 className="bg-gradient-to-r from-[#c4b5fd] via-white to-[#93c5fd] bg-clip-text text-2xl font-black tracking-tight text-transparent">
           KANDERA
         </h1>
+        <div className="scale-75 opacity-60">
+          <GalaxyMark />
+        </div>
       </header>
 
       <div className="relative z-10 mx-auto max-w-4xl px-4 py-4">
