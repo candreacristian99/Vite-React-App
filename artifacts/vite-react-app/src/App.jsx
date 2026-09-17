@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, memo } from 'react';
 import { supabase } from './lib/supabase.js';
 import { compressImage } from './lib/compress.js';
 import Feed from './pages/Feed.jsx';
@@ -19,11 +19,6 @@ const GalaxyStyles = () => (
       from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes swirlIn {
-      0% { opacity: 0; transform: translateX(-30px) rotate(-200deg) scale(0.2); filter: blur(10px); }
-      65% { opacity: 0.9; transform: translateX(3px) rotate(12deg) scale(1.1); filter: blur(1px); }
-      100% { opacity: 1; transform: translateX(0) rotate(0) scale(1); filter: blur(0); }
-    }
     @keyframes corePulse {
       0%, 100% { filter: drop-shadow(0 0 6px rgba(167,139,250,0.6)); }
       50% { filter: drop-shadow(0 0 18px rgba(167,139,250,1)); }
@@ -32,6 +27,13 @@ const GalaxyStyles = () => (
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
     }
+    @keyframes cometFly {
+      0% { left: -18%; opacity: 0; }
+      10% { opacity: 1; }
+      88% { opacity: 1; }
+      100% { left: 106%; opacity: 0; }
+    }
+    @keyframes wordReveal { to { clip-path: inset(0 -8% 0 0); } }
     .page-enter { animation: fadeUp 0.4s ease-out; }
     .orbit-fast {
       transform-box: fill-box;
@@ -48,14 +50,22 @@ const GalaxyStyles = () => (
   `}</style>
 );
 
-function StarField({ count = 60 }) {
-  const stars = Array.from({ length: count }, (_, i) => ({
-    id: i,
-    top: Math.random() * 100,
-    left: Math.random() * 100,
-    size: Math.random() * 2 + 1,
-    delay: Math.random() * 3,
-  }));
+const starCache = {};
+function makeStars(count) {
+  if (!starCache[count]) {
+    starCache[count] = Array.from({ length: count }, (_, i) => ({
+      id: i,
+      top: Math.random() * 100,
+      left: Math.random() * 100,
+      size: Math.random() * 2 + 1,
+      delay: Math.random() * 3,
+    }));
+  }
+  return starCache[count];
+}
+
+const StarField = memo(function StarField({ count = 60 }) {
+  const stars = makeStars(count);
 
   return (
     <div className="pointer-events-none fixed inset-0 z-0">
@@ -78,7 +88,7 @@ function StarField({ count = 60 }) {
       <div className="absolute left-1/3 top-2/3 h-64 w-64 rounded-full bg-[#db2777] opacity-15 blur-[100px]" />
     </div>
   );
-}
+});
 
 function GalaxyMark({ scale = 1 }) {
   return (
@@ -104,31 +114,62 @@ function GalaxyMark({ scale = 1 }) {
   );
 }
 
-function AnimatedLogo() {
-  const [cycle, setCycle] = useState(0);
-  const rest = 'ANDERA'.split('');
-
-  useEffect(() => {
-    const t = setInterval(() => setCycle((c) => c + 1), 6000);
-    return () => clearInterval(t);
-  }, []);
+function OrbitSystem() {
+  const rings = [
+    { tilt: -18, d: 'M 20 90 a 70 20 0 1 0 140 0 a 70 20 0 1 0 -140 0', dur: '11s', r: 3 },
+    { tilt: 42,  d: 'M 32 90 a 58 15 0 1 0 116 0 a 58 15 0 1 0 -116 0', dur: '8s',  r: 2.4 },
+    { tilt: -74, d: 'M 46 90 a 44 11 0 1 0 88 0 a 44 11 0 1 0 -88 0',   dur: '6s',  r: 2 },
+  ];
 
   return (
-    <h1 className="flex items-center text-5xl font-black tracking-tight">
-      <span className="bg-gradient-to-r from-[#c4b5fd] to-white bg-clip-text text-transparent">K</span>
-      {rest.map((letter, i) => (
-        <span
-          key={`${cycle}-${i}`}
-          className="bg-gradient-to-r from-white to-[#93c5fd] bg-clip-text text-transparent"
-          style={{
-            animation: `swirlIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) ${i * 0.09}s both`,
-            display: 'inline-block',
-          }}
-        >
-          {letter}
-        </span>
-      ))}
-    </h1>
+    <svg viewBox="0 0 180 180" className="h-56 w-56">
+      <defs>
+        <radialGradient id="orbCore">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="55%" stopColor="#c4b5fd" />
+          <stop offset="100%" stopColor="#5b21b6" />
+        </radialGradient>
+      </defs>
+
+      <g style={{ transformBox: 'view-box', transformOrigin: '90px 90px', animation: 'spin 120s linear infinite' }}>
+        {rings.map((ring, i) => (
+          <g key={i} transform={`rotate(${ring.tilt} 90 90)`}>
+            <path d={ring.d} fill="none" stroke="#a78bfa" strokeWidth="0.8" opacity="0.45" />
+            <circle r={ring.r} fill="#e9d5ff">
+              <animateMotion dur={ring.dur} repeatCount="indefinite" path={ring.d} />
+            </circle>
+          </g>
+        ))}
+      </g>
+
+      <circle cx="90" cy="90" r="16" fill="url(#orbCore)"
+        style={{ animation: 'corePulse 3s ease-in-out infinite' }} />
+    </svg>
+  );
+}
+
+function AnimatedLogo() {
+  return (
+    <div className="relative inline-block">
+      <h1
+        className="bg-gradient-to-r from-[#c4b5fd] via-white to-[#93c5fd] bg-clip-text text-5xl font-black tracking-tight text-transparent"
+        style={{
+          clipPath: 'inset(0 100% 0 0)',
+          animation: 'wordReveal 1.1s cubic-bezier(.25,.8,.25,1) .25s forwards',
+        }}
+      >
+        KANDERA
+      </h1>
+      <span
+        className="pointer-events-none absolute top-1/2 h-[2px] w-16 -translate-y-1/2 rounded-full"
+        style={{
+          opacity: 0,
+          background: 'linear-gradient(90deg, transparent, rgba(196,181,253,.5), #fff)',
+          boxShadow: '0 0 18px 5px rgba(167,139,250,.6)',
+          animation: 'cometFly 1.1s cubic-bezier(.25,.8,.25,1) .25s forwards',
+        }}
+      />
+    </div>
   );
 }
 
@@ -177,12 +218,12 @@ function Login() {
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-10 flex flex-col items-center">
           <AnimatedLogo />
-          <div className="mt-4">
-            <GalaxyMark />
+          <div className="mt-2">
+            <OrbitSystem />
           </div>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+        <div className="rounded-3xl border border-white/10 bg-[#0d0a1a]/85 p-8">
           <h2 className="text-2xl font-bold text-white">
             {mode === 'signin' ? 'Welcome back.' : 'Join the galaxy.'}
           </h2>
@@ -383,7 +424,7 @@ function SetPassword() {
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#06010f] px-6">
       <GalaxyStyles />
       <StarField count={50} />
-      <div className="relative z-10 w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-xl">
+      <div className="relative z-10 w-full max-w-md rounded-3xl border border-white/10 bg-[#0d0a1a]/85 p-8">
         <h1 className="text-2xl font-bold text-white">Set a new password</h1>
         <p className="mt-2 text-sm text-white/50">
           At least 8 characters, with one uppercase letter, one lowercase letter and one number.
@@ -411,7 +452,7 @@ function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('feed');
-  
+
   const [selectedOrbit, setSelectedOrbit] = useState(null);
 
   const [recovery, setRecovery] = useState(
