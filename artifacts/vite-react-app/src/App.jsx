@@ -1,12 +1,11 @@
-import Feed from './pages/Feed.jsx';
-import { compressImage } from './lib/compress.js';
 import { useEffect, useState } from 'react';
 import { supabase } from './lib/supabase.js';
+import { compressImage } from './lib/compress.js';
+import Feed from './pages/Feed.jsx';
 import Browse from './pages/Browse.jsx';
 import Listings from './pages/Listings.jsx';
 import Messages from './pages/Messages.jsx';
-
-
+import Groups from './pages/Groups.jsx';
 
 function Login() {
   const [mode, setMode] = useState('signin');
@@ -79,11 +78,8 @@ function Login() {
               type="password" required minLength={8}
               pattern={mode === 'signup' ? '(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}' : undefined}
               title="At least 8 characters, with one uppercase letter, one lowercase letter and one number."
-
-
               autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
               placeholder="At least 8 characters"
-
               value={password} onChange={(e) => setPassword(e.target.value)}
             />
           </div>
@@ -115,24 +111,22 @@ function Login() {
   );
 }
 
-
-  const emptyProfile = {
-    display_name: '', username: '', bio: '',
-    country: '', city: '', is_seller: false,
-    avatar_url: '',
-  };
-
+const emptyProfile = {
+  display_name: '', username: '', bio: '',
+  country: '', city: '', is_seller: false,
+  avatar_url: '',
+};
 
 function Profile({ user }) {
   const [profile, setProfile] = useState(emptyProfile);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState(''); 
-const [uploading, setUploading] = useState(false)
+  const [msg, setMsg] = useState('');
+  const [uploading, setUploading] = useState(false);
+
   useEffect(() => {
     supabase.from('profiles')
       .select('display_name, username, bio, country, city, is_seller, avatar_url')
-
       .eq('id', user.id).maybeSingle()
       .then(({ data }) => {
         if (data) setProfile({ ...emptyProfile, ...data, is_seller: !!data.is_seller });
@@ -144,6 +138,7 @@ const [uploading, setUploading] = useState(false)
     setProfile((p) => ({ ...p, [field]: value }));
     setMsg('');
   }
+
   async function uploadAvatar(e) {
     const raw = e.target.files?.[0];
     if (!raw) return;
@@ -152,7 +147,6 @@ const [uploading, setUploading] = useState(false)
 
     const file = await compressImage(raw, 400);
     const path = `${user.id}/avatar.jpg`;
-
 
     const { error: upErr } = await supabase.storage
       .from('avatars')
@@ -186,7 +180,7 @@ const [uploading, setUploading] = useState(false)
   return (
     <section className="rounded-3xl bg-white p-6 shadow-xl sm:p-10">
       <h2 className="text-2xl font-bold">Your profile</h2>
-      
+
       <div className="mt-6 flex items-center gap-4">
         <div className="h-20 w-20 overflow-hidden rounded-full bg-gradient-to-br from-primary to-primary-dark">
           {profile.avatar_url ? (
@@ -203,7 +197,6 @@ const [uploading, setUploading] = useState(false)
             onChange={uploadAvatar} disabled={uploading} />
         </label>
       </div>
-
 
       <form onSubmit={save} className="mt-6 space-y-5">
         <div className="grid gap-5 sm:grid-cols-2">
@@ -246,6 +239,7 @@ const [uploading, setUploading] = useState(false)
     </section>
   );
 }
+
 function SetPassword() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -291,22 +285,19 @@ function SetPassword() {
 
 function App() {
   const [session, setSession] = useState(null);
-  
   const [loading, setLoading] = useState(true);
-
-
   const [tab, setTab] = useState('feed');
   const [recovery, setRecovery] = useState(
     window.location.hash.includes('type=recovery')
-    );
+  );
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data?.session ?? null);
       setLoading(false);
     });
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
-        if (event === 'PASSWORD_RECOVERY') setRecovery(true);
-
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === 'PASSWORD_RECOVERY') setRecovery(true);
       setSession(s);
       setLoading(false);
     });
@@ -314,18 +305,16 @@ function App() {
   }, []);
 
   if (loading) return <main className="flex min-h-screen items-center justify-center bg-bg">Loading...</main>;
- 
   if (recovery && session?.user) return <SetPassword />;
-
-if (!session?.user) return <Login />;
+  if (!session?.user) return <Login />;
 
   const tabs = [
     { id: 'feed', label: 'Feed' },
     { id: 'browse', label: 'Discover' },
     { id: 'messages', label: 'Messages' },
+    { id: 'groups', label: 'Groups' },
     { id: 'profile', label: 'Profile' },
   ];
-
 
   return (
     <main className="min-h-screen bg-bg pb-24 text-text">
@@ -335,10 +324,9 @@ if (!session?.user) return <Login />;
 
       <div className="mx-auto max-w-4xl px-4 py-6">
         {tab === 'feed' && <Feed user={session.user} />}
-        {tab === 'browse' && <Browse />}
+        {tab === 'browse' && <Browse user={session.user} />}
         {tab === 'messages' && <Messages user={session.user} />}
-
-
+        {tab === 'groups' && <Groups user={session.user} />}
         {tab === 'profile' && <Profile user={session.user} />}
       </div>
 
