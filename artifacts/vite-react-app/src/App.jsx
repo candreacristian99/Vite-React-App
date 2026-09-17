@@ -13,23 +13,36 @@ const GalaxyStyles = () => (
       0%, 100% { opacity: 0.2; transform: scale(1); }
       50% { opacity: 1; transform: scale(1.4); }
     }
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
-    }
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes logoMorph {
-      0% { opacity: 0; transform: scale(0.7) rotate(-8deg); filter: blur(6px); }
-      100% { opacity: 1; transform: scale(1) rotate(0); filter: blur(0); }
+    @keyframes swirlIn {
+      0% { opacity: 0; transform: translateX(-30px) rotate(-200deg) scale(0.2); filter: blur(10px); }
+      65% { opacity: 0.9; transform: translateX(3px) rotate(12deg) scale(1.1); filter: blur(1px); }
+      100% { opacity: 1; transform: translateX(0) rotate(0) scale(1); filter: blur(0); }
     }
-    @keyframes orbit {
+    @keyframes corePulse {
+      0%, 100% { filter: drop-shadow(0 0 6px rgba(167,139,250,0.6)); }
+      50% { filter: drop-shadow(0 0 18px rgba(167,139,250,1)); }
+    }
+    @keyframes spin {
       from { transform: rotate(0deg); }
       to { transform: rotate(360deg); }
     }
     .page-enter { animation: fadeUp 0.4s ease-out; }
+    .orbit-fast {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: spin 14s linear infinite;
+      will-change: transform;
+    }
+    .orbit-slow {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: spin 26s linear infinite reverse;
+      will-change: transform;
+    }
   `}</style>
 );
 
@@ -65,22 +78,55 @@ function StarField({ count = 60 }) {
   );
 }
 
-function GalaxyMark() {
+function GalaxyMark({ scale = 1 }) {
   return (
-    <svg width="120" height="28" viewBox="0 0 120 28" className="opacity-70">
-      <ellipse cx="60" cy="14" rx="52" ry="11" fill="none" stroke="#a78bfa" strokeWidth="1" opacity="0.5" />
-      <ellipse cx="60" cy="14" rx="38" ry="7" fill="none" stroke="#7c3aed" strokeWidth="1" opacity="0.7"
-        style={{ transformOrigin: '60px 14px', animation: 'orbit 12s linear infinite' }} />
-      <circle cx="60" cy="14" r="4" fill="url(#coreGrad)" />
-      <circle cx="112" cy="14" r="2" fill="#c4b5fd" />
-      <circle cx="22" cy="10" r="1.5" fill="#93c5fd" />
+    <svg width={140 * scale} height={40 * scale} viewBox="0 0 140 40" className="opacity-80">
+      <g className="orbit-slow">
+        <ellipse cx="70" cy="20" rx="62" ry="13" fill="none" stroke="#a78bfa" strokeWidth="0.8" opacity="0.4" />
+      </g>
+      <g className="orbit-fast">
+        <ellipse cx="70" cy="20" rx="44" ry="9" fill="none" stroke="#7c3aed" strokeWidth="1.2" opacity="0.75" />
+      </g>
+      <circle cx="70" cy="20" r="5" fill="url(#coreGrad)" style={{ animation: 'corePulse 3s ease-in-out infinite' }} />
+      <circle cx="132" cy="20" r="1.8" fill="#c4b5fd" opacity="0.9" />
+      <circle cx="26" cy="15" r="1.4" fill="#93c5fd" opacity="0.8" />
+      <circle cx="108" cy="29" r="1" fill="#f0abfc" opacity="0.7" />
       <defs>
         <radialGradient id="coreGrad">
           <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="60%" stopColor="#c4b5fd" />
           <stop offset="100%" stopColor="#7c3aed" />
         </radialGradient>
       </defs>
     </svg>
+  );
+}
+
+function AnimatedLogo() {
+  const [cycle, setCycle] = useState(0);
+  const rest = 'ANDERA'.split('');
+
+  useEffect(() => {
+    const t = setInterval(() => setCycle((c) => c + 1), 6000);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <h1 className="flex items-center text-5xl font-black tracking-tight">
+      <span className="bg-gradient-to-r from-[#c4b5fd] to-white bg-clip-text text-transparent">K</span>
+      {rest.map((letter, i) => (
+        <span
+          key={`${cycle}-${i}`}
+          className="bg-gradient-to-r from-white to-[#93c5fd] bg-clip-text text-transparent"
+          style={{
+            animation: `swirlIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) ${i * 0.09}s both`,
+            display: 'inline-block',
+          }}
+        >
+          {letter}
+        </span>
+      ))}
+    </h1>
   );
 }
 
@@ -91,12 +137,6 @@ function Login() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
-  const [logoState, setLogoState] = useState(true);
-
-  useEffect(() => {
-    const cycle = setInterval(() => setLogoState((s) => !s), 3000);
-    return () => clearInterval(cycle);
-  }, []);
 
   async function submit(e) {
     e.preventDefault();
@@ -134,15 +174,7 @@ function Login() {
 
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-10 flex flex-col items-center">
-          <div className="flex h-16 items-center justify-center">
-            <h1
-              key={logoState}
-              className="bg-gradient-to-r from-[#c4b5fd] via-white to-[#93c5fd] bg-clip-text text-5xl font-black tracking-tight text-transparent"
-              style={{ animation: 'logoMorph 0.6s ease-out' }}
-            >
-              {logoState ? 'KANDERA' : 'K'}
-            </h1>
-          </div>
+          <AnimatedLogo />
           <div className="mt-4">
             <GalaxyMark />
           </div>
@@ -422,9 +454,7 @@ function App() {
         <h1 className="bg-gradient-to-r from-[#c4b5fd] via-white to-[#93c5fd] bg-clip-text text-2xl font-black tracking-tight text-transparent">
           KANDERA
         </h1>
-        <div className="scale-75 opacity-60">
-          <GalaxyMark />
-        </div>
+        <GalaxyMark scale={0.6} />
       </header>
 
       <div className="relative z-10 mx-auto max-w-4xl px-4 py-4">
