@@ -7,6 +7,8 @@ import Listings from './pages/Listings.jsx';
 import Messages from './pages/Messages.jsx';
 import Groups from './pages/Groups.jsx';
 
+import Orbit from './pages/Orbit.jsx';
+
 const GalaxyStyles = () => (
   <style>{`
     @keyframes twinkle {
@@ -409,6 +411,9 @@ function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('feed');
+  
+  const [selectedOrbit, setSelectedOrbit] = useState(null);
+
   const [recovery, setRecovery] = useState(
     window.location.hash.includes('type=recovery')
   );
@@ -458,7 +463,20 @@ function App() {
       </header>
 
       <div className="relative z-10 mx-auto max-w-4xl px-4 py-4">
-        {tab === 'feed' && <Feed user={session.user} />}
+        {tab === 'feed' && !selectedOrbit && (
+          <Feed
+            user={session.user}
+            openOrbit={(orbitId) => setSelectedOrbit(orbitId)}
+          />
+        )}
+
+        {tab === 'feed' && selectedOrbit && (
+          <Orbit
+            user={session.user}
+            orbitId={selectedOrbit}
+            onBack={() => setSelectedOrbit(null)}
+          />
+        )}
         {tab === 'browse' && <Browse user={session.user} />}
         {tab === 'messages' && <Messages user={session.user} />}
         {tab === 'groups' && <Groups user={session.user} />}
