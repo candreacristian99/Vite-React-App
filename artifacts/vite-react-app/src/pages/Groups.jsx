@@ -19,11 +19,23 @@ export default function Groups({ user }) {
   }, []);
 
   async function loadGroups() {
-    const { data } = await supabase
+    const { data: memberships } = await supabase
       .from('group_members')
-      .select('group_id, groups(id, name, description, avatar_url, owner_id)')
+      .select('group_id')
       .eq('user_id', user.id);
-    setGroups((data || []).map((r) => r.groups).filter(Boolean));
+
+    const ids = (memberships || []).map((m) => m.group_id);
+    if (!ids.length) {
+      setGroups([]);
+      return;
+    }
+
+    const { data } = await supabase
+      .from('groups')
+      .select('id, name, description, avatar_url, owner_id')
+      .in('id', ids);
+
+    setGroups(data || []);
   }
 
   async function createGroup(e) {
@@ -53,7 +65,7 @@ export default function Groups({ user }) {
     setActive(group);
     const { data } = await supabase
       .from('group_messages')
-      .select('id, sender_id, body, image_url, created_at, profiles(display_name, username)')
+      .select('id, sender_id, body, image_url, created_at')
       .eq('group_id', group.id)
       .order('created_at');
     setMessages(data || []);
@@ -78,7 +90,7 @@ export default function Groups({ user }) {
     setSending(true);
 
     const file = await compressImage(raw, 1200);
-    const path = `${active.id}/${Date.now()}.jpg`;
+    const path = `${user.id}/${Date.now()}.jpg`;
 
     const { error: upErr } = await supabase.storage
       .from('messages')
@@ -124,11 +136,6 @@ export default function Groups({ user }) {
                   ? 'ml-auto bg-primary text-white'
                   : 'bg-slate-100'
               }`}>
-              {m.sender_id !== user.id && (
-                <p className="mb-1 text-xs font-semibold opacity-70">
-                  {m.profiles?.display_name || m.profiles?.username || 'Someone'}
-                </p>
-              )}
               {m.image_url && (
                 <img src={m.image_url} alt="" className="mb-2 max-h-60 rounded-xl object-cover" />
               )}
