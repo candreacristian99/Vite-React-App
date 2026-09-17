@@ -42,6 +42,8 @@ export default function Feed({ user }) {
   const [openEcho, setOpenEcho] = useState(null);
   const [echoCaption, setEchoCaption] = useState('');
 
+  const [translations, setTranslations] = useState({});
+
   useEffect(() => {
     loadPosts();
     if (navigator.geolocation) {
@@ -57,7 +59,6 @@ export default function Feed({ user }) {
     const { data } = await supabase
       .from('posts')
       .select('id, author_id, caption, image_url, latitude, longitude, city, country, created_at')
-
       .order('created_at', { ascending: false })
       .limit(50);
     setPosts(data || []);
@@ -175,6 +176,15 @@ export default function Feed({ user }) {
     loadPosts();
   }
 
+  async function translateCaption(postId, text) {
+    const target = navigator.language.slice(0, 2);
+    const res = await fetch(
+      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=auto|${target}`
+    );
+    const data = await res.json();
+    setTranslations((t) => ({ ...t, [postId]: data.responseData?.translatedText || text }));
+  }
+
   async function createPost(e) {
     e.preventDefault();
     const fileInput = e.target.elements.photo;
@@ -285,14 +295,16 @@ export default function Feed({ user }) {
                   {p.caption && (
                     <div className="mt-1">
                       <p className="text-sm text-slate-600">{p.caption}</p>
-                      <a
-                        href={`https://translate.google.com/?sl=auto&tl=${navigator.language.slice(0, 2)}&text=${encodeURIComponent(p.caption)}&op=translate`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 inline-block text-xs font-semibold text-primary-dark underline"
-                      >
-                        Translate
-                      </a>
+                      {translations[p.id] ? (
+                        <p className="mt-1 text-sm italic text-primary-dark">{translations[p.id]}</p>
+                      ) : (
+                        <button
+                          onClick={() => translateCaption(p.id, p.caption)}
+                          className="mt-1 text-xs font-semibold text-primary-dark underline"
+                        >
+                          Translate
+                        </button>
+                      )}
                     </div>
                   )}
                   {p.city && <p className="mt-2 text-xs text-slate-400">📍 {p.city}</p>}
