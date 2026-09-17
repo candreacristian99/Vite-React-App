@@ -3,9 +3,11 @@ import { supabase } from '../lib/supabase.js';
 import { compressImage } from '../lib/compress.js';
 
 const REACTIONS = [
-  { type: 'inspiring', emoji: '✨', label: 'Inspiring' },
-  { type: 'want_to_go', emoji: '📍', label: 'Want to go' },
-  { type: 'recommend', emoji: '🤝', label: 'Recommend' },
+  { type: 'wave', emoji: '🌊', label: 'Val' },
+  { type: 'impulse', emoji: '⚡', label: 'Impuls' },
+  { type: 'portal', emoji: '🌌', label: 'Portal' },
+  { type: 'spark', emoji: '✨', label: 'Scânteie' },
+  { type: 'comet', emoji: '☄️', label: 'Cometă' },
 ];
 
 function haversine(lat1, lon1, lat2, lon2) {
@@ -36,6 +38,10 @@ export default function Feed({ user }) {
   const [openComments, setOpenComments] = useState(null);
   const [commentText, setCommentText] = useState('');
 
+  const [echoes, setEchoes] = useState({});
+  const [openEcho, setOpenEcho] = useState(null);
+  const [echoCaption, setEchoCaption] = useState('');
+
   useEffect(() => {
     loadPosts();
     if (navigator.geolocation) {
@@ -55,7 +61,10 @@ export default function Feed({ user }) {
       .limit(50);
     setPosts(data || []);
     setLoading(false);
-    if (data?.length) loadReactions(data.map((p) => p.id));
+    if (data?.length) {
+      loadReactions(data.map((p) => p.id));
+      loadEchoes(data.map((p) => p.id));
+    }
   }
 
   async function loadReactions(postIds) {
@@ -120,6 +129,49 @@ export default function Feed({ user }) {
     });
     setCommentText('');
     loadComments(postId);
+  }
+
+  async function loadEchoes(postIds) {
+    const { data } = await supabase
+      .from('echoes')
+      .select('id, original_post_id, caption, image_url, author_id, created_at, profiles(display_name, username)')
+      .in('original_post_id', postIds)
+      .order('created_at', { ascending: false });
+
+    const grouped = {};
+    (data || []).forEach((e) => {
+      grouped[e.original_post_id] = grouped[e.original_post_id] || [];
+      grouped[e.original_post_id].push(e);
+    });
+    setEchoes(grouped);
+  }
+
+  async function sendEcho(postId) {
+    if (!echoCaption.trim()) return;
+    await supabase.from('echoes').insert({
+      original_post_id: postId,
+      author_id: user.id,
+      caption: echoCaption.trim(),
+    });
+    setEchoCaption('');
+    setOpenEcho(null);
+    loadEchoes(posts.map((p) => p.id));
+  }
+
+  function sharePost(post) {
+    const url = `${window.location.origin}${window.location.pathname}#post-${post.id}`;
+    if (navigator.share) {
+      navigator.share({ title: 'Kandera', text: post.caption || 'Check this out', url });
+    } else {
+      navigator.clipboard.writeText(url);
+      alert('Link copied.');
+    }
+  }
+
+  async function deletePost(postId) {
+    if (!confirm('Send this post into the black hole? This cannot be undone.')) return;
+    await supabase.from('posts').delete().eq('id', postId);
+    loadPosts();
   }
 
   async function createPost(e) {
@@ -208,14 +260,27 @@ export default function Feed({ user }) {
             const counts = reactionCounts[p.id] || {};
             const mine = myReactions[p.id];
             const total = Object.values(counts).reduce((a, b) => a + b, 0);
+            const postEchoes = echoes[p.id] || [];
 
             return (
               <article key={p.id} className="overflow-hidden rounded-2xl border border-slate-200">
                 <img src={p.image_url} alt="" className="h-48 w-full object-cover" />
                 <div className="p-4">
-                  <p className="text-sm font-semibold">
-                    {p.profiles?.display_name || p.profiles?.username || 'Someone'}
-                  </p>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-semibold">
+                      {p.profiles?.display_name || p.profiles?.username || 'Someone'}
+                    </p>
+                    {p.author_id === user.id && (
+                      <button
+                        onClick={() => deletePost(p.id)}
+                        title="Send to black hole"
+                        className="text-lg transition hover:scale-125"
+                      >
+                        🕳️
+                      </button>
+                    )}
+                  </div>
+
                   {p.caption && (
                     <div className="mt-1">
                       <p className="text-sm text-slate-600">{p.caption}</p>
@@ -239,20 +304,32 @@ export default function Feed({ user }) {
                     </div>
                   )}
 
-                  <div className="relative mt-3 flex items-center gap-2 border-t border-slate-100 pt-3">
+                  <div className="relative mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
                     <button
                       onClick={() => setOpenReactions(openReactions === p.id ? null : p.id)}
                       className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${
                         mine ? 'bg-primary/10 text-primary-dark' : 'bg-bg text-slate-500'
                       }`}
                     >
-                      {mine ? REACTIONS.find((r) => r.type === mine)?.emoji : '✨'} React
+                      {mine ? REACTIONS.find((r) => r.type === mine)?.emoji : '🌊'} React
                     </button>
                     <button
                       onClick={() => toggleComments(p.id)}
                       className="rounded-full bg-bg px-3 py-1.5 text-sm font-semibold text-slate-500"
                     >
                       💬 Comment
+                    </button>
+                    <button
+                      onClick={() => setOpenEcho(openEcho === p.id ? null : p.id)}
+                      className="rounded-full bg-bg px-3 py-1.5 text-sm font-semibold text-slate-500"
+                    >
+                      🔊 Echo
+                    </button>
+                    <button
+                      onClick={() => sharePost(p)}
+                      className="rounded-full bg-bg px-3 py-1.5 text-sm font-semibold text-slate-500"
+                    >
+                      ↗ Share
                     </button>
 
                     {openReactions === p.id && (
@@ -295,6 +372,38 @@ export default function Feed({ user }) {
                           Send
                         </button>
                       </div>
+                    </div>
+                  )}
+
+                  {openEcho === p.id && (
+                    <div className="mt-3 border-t border-slate-100 pt-3">
+                      <div className="flex gap-2">
+                        <input
+                          value={echoCaption}
+                          onChange={(e) => setEchoCaption(e.target.value)}
+                          placeholder="What does this remind you of?"
+                          className="flex-1 rounded-xl border border-slate-200 bg-bg px-3 py-2 text-sm outline-none focus:border-primary"
+                        />
+                        <button
+                          onClick={() => sendEcho(p.id)}
+                          className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
+                        >
+                          Echo
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {postEchoes.length > 0 && (
+                    <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+                      {postEchoes.map((e) => (
+                        <div key={e.id} className="rounded-xl bg-primary/5 px-3 py-2 text-sm">
+                          <span className="font-semibold text-primary-dark">
+                            🔊 {e.profiles?.display_name || e.profiles?.username || 'Someone'}:
+                          </span>{' '}
+                          {e.caption}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
