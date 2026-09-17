@@ -229,3 +229,17 @@ button {
 .kd-app [class*="shadow-"] {
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5) !important;
 }
+.kd-app *:not(svg):not(path):not(circle):not(ellipse):not(text) {
+  background-image: none;
+}
+.kd-app [style*="background"],
+.kd-app [class*="bg-[#f"],
+.kd-app [class*="bg-[#e"],
+.kd-app [class*="bg-[#d"],
+.kd-app [class*="bg-[white"],
+.kd-app [class*="bg-card"],
+.kd-app [class*="bg-surface"] {
+  background-color: rgba(255,255,255,0.04) !important;
+  background-image: none !important;
+  color: rgba(255,255,255,0.88) !important;
+}

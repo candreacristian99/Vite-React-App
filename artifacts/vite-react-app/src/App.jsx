@@ -1,3 +1,6 @@
+
+import Reels from './pages/Reels.jsx';
+
 import { useEffect, useState, useRef, memo } from 'react';
 import { supabase } from './lib/supabase.js';
 import { compressImage } from './lib/compress.js';
@@ -504,6 +507,10 @@ const TABS = [
   { id: 'browse',   label: 'Discover', accent: '#93c5fd', edge: 'rgba(96,165,250,.32)',  tint: 'rgba(37,99,235,.10)',  head: 'rgba(37,99,235,.16)',  note: 'Places, people and listings' },
   { id: 'messages', label: 'Messages', accent: '#f9a8d4', edge: 'rgba(244,114,182,.32)', tint: 'rgba(219,39,119,.10)', head: 'rgba(219,39,119,.16)', note: 'Your conversations' },
   { id: 'groups',   label: 'Groups',   accent: '#67e8f9', edge: 'rgba(34,211,238,.30)',  tint: 'rgba(8,145,178,.10)',  head: 'rgba(8,145,178,.16)',  note: 'Communities you belong to' },
+  
+  { id: 'reels', label: 'Reels', accent: '#f0abfc', edge: 'rgba(232,121,249,.30)', tint: 'rgba(192,38,211,.10)', head: 'rgba(192,38,211,.16)', note: 'Short videos, up to five minutes' },
+
+
 ];
 
 function Gear({ className }) {
@@ -711,7 +718,11 @@ function App() {
             )}
             {tab === 'browse' && <Browse user={user} />}
             {tab === 'messages' && <Messages user={user} />}
+           
             {tab === 'groups' && <Groups user={user} />}
+            {tab === 'reels' && <Reels user={user} />}
+
+
           </div>
         )}
       </div>
