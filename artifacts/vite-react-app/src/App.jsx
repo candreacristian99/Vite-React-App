@@ -105,41 +105,70 @@ const StarField = memo(function StarField({ count = 60 }) {
 });
 
 /* ---- LOGO: planeta cu inele + K in mijloc ---- */
-function KOrbit({ size = 44, uid = 'k', spin = 90, glow = true }) {
-  const rings = [
-    { tilt: -20, d: 'M 12 60 a 48 14 0 1 0 96 0 a 48 14 0 1 0 -96 0', dur: '9s',   r: 2.2 },
-    { tilt: 45,  d: 'M 22 60 a 38 10 0 1 0 76 0 a 38 10 0 1 0 -76 0', dur: '6.5s', r: 1.8 },
-    { tilt: -70, d: 'M 30 60 a 30 8 0 1 0 60 0 a 30 8 0 1 0 -60 0',   dur: '5s',   r: 1.6 },
-  ];
+function KOrbit({ size = 44, uid = 'k' }) {
+  const outer = 'M 10 60 a 50 25 0 1 0 100 0 a 50 25 0 1 0 -100 0';
+  const inner = 'M 22 60 a 38 15 0 1 0 76 0 a 38 15 0 1 0 -76 0';
+
   return (
     <svg viewBox="0 0 120 120" width={size} height={size} className="overflow-visible">
       <defs>
-        <radialGradient id={`core-${uid}`} cx="36%" cy="30%" r="75%">
+        <linearGradient id={`kfill-${uid}`} x1="0" y1="0" x2="0.4" y2="1">
           <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="55%" stopColor="#c4b5fd" />
-          <stop offset="100%" stopColor="#5b21b6" />
-        </radialGradient>
+          <stop offset="45%" stopColor="#d8ccff" />
+          <stop offset="100%" stopColor="#8b5cf6" />
+        </linearGradient>
+        <linearGradient id={`ring1-${uid}`} x1="0" y1="0" x2="1" y2="0.4">
+          <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.15" />
+          <stop offset="50%" stopColor="#c4b5fd" stopOpacity="0.95" />
+          <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.15" />
+        </linearGradient>
+        <linearGradient id={`ring2-${uid}`} x1="1" y1="0" x2="0" y2="0.5">
+          <stop offset="0%" stopColor="#f0abfc" stopOpacity="0.1" />
+          <stop offset="50%" stopColor="#93c5fd" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.1" />
+        </linearGradient>
       </defs>
 
-      <g style={{ transformBox: 'view-box', transformOrigin: '60px 60px',
-                  animation: `spin ${spin}s linear infinite` }}>
-        {rings.map((ring, i) => (
-          <g key={i} transform={`rotate(${ring.tilt} 60 60)`}>
-            <path d={ring.d} fill="none" stroke="#a78bfa" strokeWidth="1" opacity="0.45" />
-            <circle r={ring.r} fill="#e9d5ff">
-              <animateMotion dur={ring.dur} repeatCount="indefinite" path={ring.d} />
-            </circle>
-          </g>
-        ))}
+      <g transform="rotate(-17 60 60)">
+        <path d="M 10 60 a 50 25 0 0 1 100 0" fill="none"
+          stroke={`url(#ring1-${uid})`} strokeWidth="1.6" strokeLinecap="round" />
+      </g>
+      <g transform="rotate(-6 60 60)">
+        <path d="M 22 60 a 38 15 0 0 1 76 0" fill="none"
+          stroke={`url(#ring2-${uid})`} strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
       </g>
 
-      <circle cx="60" cy="60" r="25" fill={`url(#core-${uid})`}
-        style={glow ? { animation: 'corePulse 3s ease-in-out infinite' } : undefined} />
-      <text x="60" y="61" textAnchor="middle" dominantBaseline="central"
-        fontSize="30" fontWeight="900" fill="#1a0a3d" letterSpacing="-1">K</text>
+      <text x="60" y="62" textAnchor="middle" dominantBaseline="central"
+        fontSize="62" fontWeight="900" letterSpacing="-3"
+        fill={`url(#kfill-${uid})`}
+        style={{ filter: 'drop-shadow(0 0 10px rgba(167,139,250,.55))' }}>
+        K
+      </text>
+
+      <g transform="rotate(-17 60 60)">
+        <path d="M 110 60 a 50 25 0 0 1 -100 0" fill="none"
+          stroke={`url(#ring1-${uid})`} strokeWidth="1.6" strokeLinecap="round" />
+        <circle r="2.8" fill="#ffffff" style={{ filter: 'drop-shadow(0 0 5px #c4b5fd)' }}>
+          <animateMotion dur="8s" repeatCount="indefinite" path={outer} />
+          <animate attributeName="r" dur="8s" repeatCount="indefinite"
+            values="1.4;1.4;2.8;3.2;2.8;1.4;1.4" keyTimes="0;0.2;0.45;0.55;0.7;0.9;1" />
+          <animate attributeName="opacity" dur="8s" repeatCount="indefinite"
+            values="0.35;0.35;1;1;1;0.35;0.35" keyTimes="0;0.2;0.45;0.55;0.7;0.9;1" />
+        </circle>
+      </g>
+      <g transform="rotate(-6 60 60)">
+        <path d="M 98 60 a 38 15 0 0 1 -76 0" fill="none"
+          stroke={`url(#ring2-${uid})`} strokeWidth="1.2" strokeLinecap="round" opacity="0.8" />
+        <circle r="2" fill="#e9d5ff" style={{ filter: 'drop-shadow(0 0 4px #93c5fd)' }}>
+          <animateMotion dur="5.5s" repeatCount="indefinite" path={inner} />
+          <animate attributeName="opacity" dur="5.5s" repeatCount="indefinite"
+            values="0.3;0.3;1;1;0.3;0.3" keyTimes="0;0.25;0.45;0.65;0.85;1" />
+        </circle>
+      </g>
     </svg>
   );
 }
+
 
 function AnimatedLogo() {
   return (

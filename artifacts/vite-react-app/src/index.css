@@ -159,4 +159,73 @@ button {
     scroll-behavior: auto !important;
     transition-duration: .01ms !important;
   }
+}/* ---- Kandera: forteaza tema galaxie peste tot ---- */
+.kd-app [class*="bg-white"],
+.kd-app [class*="bg-gray-"],
+.kd-app [class*="bg-slate-"],
+.kd-app [class*="bg-zinc-"],
+.kd-app [class*="bg-neutral-"],
+.kd-app [class*="bg-stone-"],
+.kd-app .bg-background,
+.kd-app .bg-card,
+.kd-app .bg-popover,
+.kd-app .bg-muted,
+.kd-app .bg-secondary,
+.kd-app .bg-accent,
+.kd-app .bg-input {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  background-image: none !important;
+}
+
+.kd-app [class*="border-"],
+.kd-app .border {
+  border-color: var(--edge, rgba(167, 139, 250, 0.3)) !important;
+}
+
+.kd-app [class*="text-gray-"],
+.kd-app [class*="text-slate-"],
+.kd-app [class*="text-zinc-"],
+.kd-app [class*="text-neutral-"],
+.kd-app [class*="text-black"],
+.kd-app .text-foreground,
+.kd-app .text-card-foreground,
+.kd-app .text-popover-foreground {
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.kd-app .text-muted-foreground,
+.kd-app .text-secondary-foreground {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.kd-app input,
+.kd-app textarea,
+.kd-app select {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #fff !important;
+}
+.kd-app input::placeholder,
+.kd-app textarea::placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* butoanele verzi -> violet */
+.kd-app [class*="bg-teal-"],
+.kd-app [class*="bg-emerald-"],
+.kd-app [class*="bg-green-"],
+.kd-app [class*="bg-cyan-"],
+.kd-app .bg-primary {
+  background-image: linear-gradient(135deg, #7c3aed, #2563eb) !important;
+  background-color: transparent !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+.kd-app [class*="text-teal-"],
+.kd-app [class*="text-emerald-"],
+.kd-app .text-primary {
+  color: #c4b5fd !important;
+}
+
+.kd-app [class*="shadow-"] {
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5) !important;
 }
