@@ -56,6 +56,18 @@ const GalaxyStyles = () => (
     }
     .no-bar::-webkit-scrollbar { display: none; }
     .no-bar { scrollbar-width: none; }
+
+    /* orice chenar / fundal alb din aplicatie ia culoarea paginii curente */
+    .kd-app [class*="border-white/"] {
+      border-color: var(--edge) !important;
+      transition: border-color .35s ease;
+    }
+    .kd-app [class*="divide-white/"] > * + * { border-color: var(--edge) !important; }
+    .kd-app [class*="bg-white/"] {
+      background-color: var(--tint) !important;
+      transition: background-color .35s ease;
+    }
+    .kd-app [class*="ring-white/"] { --tw-ring-color: var(--edge) !important; }
   `}</style>
 );
 
@@ -92,57 +104,39 @@ const StarField = memo(function StarField({ count = 60 }) {
   );
 });
 
-function GalaxyMark({ scale = 1 }) {
-  return (
-    <svg width={140 * scale} height={40 * scale} viewBox="0 0 140 40" className="opacity-80">
-      <g className="orbit-slow">
-        <ellipse cx="70" cy="20" rx="62" ry="13" fill="none" stroke="#a78bfa" strokeWidth="0.8" opacity="0.4" />
-      </g>
-      <g className="orbit-fast">
-        <ellipse cx="70" cy="20" rx="44" ry="9" fill="none" stroke="#7c3aed" strokeWidth="1.2" opacity="0.75" />
-      </g>
-      <circle cx="70" cy="20" r="5" fill="url(#coreGrad)" style={{ animation: 'corePulse 3s ease-in-out infinite' }} />
-      <circle cx="132" cy="20" r="1.8" fill="#c4b5fd" opacity="0.9" />
-      <circle cx="26" cy="15" r="1.4" fill="#93c5fd" opacity="0.8" />
-      <circle cx="108" cy="29" r="1" fill="#f0abfc" opacity="0.7" />
-      <defs>
-        <radialGradient id="coreGrad">
-          <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="60%" stopColor="#c4b5fd" />
-          <stop offset="100%" stopColor="#7c3aed" />
-        </radialGradient>
-      </defs>
-    </svg>
-  );
-}
-
-function OrbitSystem() {
+/* ---- LOGO: planeta cu inele + K in mijloc ---- */
+function KOrbit({ size = 44, uid = 'k', spin = 90, glow = true }) {
   const rings = [
-    { tilt: -18, d: 'M 20 90 a 70 20 0 1 0 140 0 a 70 20 0 1 0 -140 0', dur: '11s', r: 3 },
-    { tilt: 42,  d: 'M 32 90 a 58 15 0 1 0 116 0 a 58 15 0 1 0 -116 0', dur: '8s',  r: 2.4 },
-    { tilt: -74, d: 'M 46 90 a 44 11 0 1 0 88 0 a 44 11 0 1 0 -88 0',   dur: '6s',  r: 2 },
+    { tilt: -20, d: 'M 12 60 a 48 14 0 1 0 96 0 a 48 14 0 1 0 -96 0', dur: '9s',   r: 2.2 },
+    { tilt: 45,  d: 'M 22 60 a 38 10 0 1 0 76 0 a 38 10 0 1 0 -76 0', dur: '6.5s', r: 1.8 },
+    { tilt: -70, d: 'M 30 60 a 30 8 0 1 0 60 0 a 30 8 0 1 0 -60 0',   dur: '5s',   r: 1.6 },
   ];
   return (
-    <svg viewBox="0 0 180 180" className="h-56 w-56">
+    <svg viewBox="0 0 120 120" width={size} height={size} className="overflow-visible">
       <defs>
-        <radialGradient id="orbCore">
+        <radialGradient id={`core-${uid}`} cx="36%" cy="30%" r="75%">
           <stop offset="0%" stopColor="#ffffff" />
           <stop offset="55%" stopColor="#c4b5fd" />
           <stop offset="100%" stopColor="#5b21b6" />
         </radialGradient>
       </defs>
-      <g style={{ transformBox: 'view-box', transformOrigin: '90px 90px', animation: 'spin 120s linear infinite' }}>
+
+      <g style={{ transformBox: 'view-box', transformOrigin: '60px 60px',
+                  animation: `spin ${spin}s linear infinite` }}>
         {rings.map((ring, i) => (
-          <g key={i} transform={`rotate(${ring.tilt} 90 90)`}>
-            <path d={ring.d} fill="none" stroke="#a78bfa" strokeWidth="0.8" opacity="0.45" />
+          <g key={i} transform={`rotate(${ring.tilt} 60 60)`}>
+            <path d={ring.d} fill="none" stroke="#a78bfa" strokeWidth="1" opacity="0.45" />
             <circle r={ring.r} fill="#e9d5ff">
               <animateMotion dur={ring.dur} repeatCount="indefinite" path={ring.d} />
             </circle>
           </g>
         ))}
       </g>
-      <circle cx="90" cy="90" r="16" fill="url(#orbCore)"
-        style={{ animation: 'corePulse 3s ease-in-out infinite' }} />
+
+      <circle cx="60" cy="60" r="25" fill={`url(#core-${uid})`}
+        style={glow ? { animation: 'corePulse 3s ease-in-out infinite' } : undefined} />
+      <text x="60" y="61" textAnchor="middle" dominantBaseline="central"
+        fontSize="30" fontWeight="900" fill="#1a0a3d" letterSpacing="-1">K</text>
     </svg>
   );
 }
@@ -164,6 +158,12 @@ function AnimatedLogo() {
     </div>
   );
 }
+
+const VIOLET = {
+  accent: '#c4b5fd',
+  edge: 'rgba(167,139,250,.32)',
+  tint: 'rgba(124,58,237,.10)',
+};
 
 function Login() {
   const [mode, setMode] = useState('signin');
@@ -198,13 +198,14 @@ function Login() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#06010f] px-6 py-12">
+    <main className="kd-app relative flex min-h-screen items-center justify-center overflow-hidden bg-[#06010f] px-6 py-12"
+      style={{ '--accent': VIOLET.accent, '--edge': VIOLET.edge, '--tint': VIOLET.tint }}>
       <GalaxyStyles />
       <StarField count={80} />
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-10 flex flex-col items-center">
           <AnimatedLogo />
-          <div className="mt-2"><OrbitSystem /></div>
+          <div className="mt-3"><KOrbit size={216} uid="login" spin={110} /></div>
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-[#0d0a1a]/85 p-8">
@@ -218,13 +219,13 @@ function Login() {
           <form onSubmit={submit} className="mt-6 space-y-4">
             <div>
               <label className="mb-2 block text-xs font-semibold tracking-wide text-white/40">Email</label>
-              <input className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-white placeholder-white/30 outline-none transition focus:border-[#a78bfa] focus:bg-white/10"
+              <input className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-white placeholder-white/30 outline-none transition focus:border-[#a78bfa]"
                 type="email" required autoComplete="email" placeholder="you@example.com"
                 value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div>
               <label className="mb-2 block text-xs font-semibold tracking-wide text-white/40">Password</label>
-              <input className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-white placeholder-white/30 outline-none transition focus:border-[#a78bfa] focus:bg-white/10"
+              <input className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 text-white placeholder-white/30 outline-none transition focus:border-[#a78bfa]"
                 type="password" required minLength={8}
                 pattern={mode === 'signup' ? '(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).{8,}' : undefined}
                 title="At least 8 characters, with one uppercase letter, one lowercase letter and one number."
@@ -310,7 +311,7 @@ function Profile({ user }) {
 
   if (loading) return <p className="p-6 text-sm text-white/40">Loading...</p>;
 
-  const inputClass = "w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/30 outline-none transition focus:border-[#a78bfa] focus:bg-white/10";
+  const inputClass = "w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/30 outline-none transition focus:border-[#a78bfa]";
 
   return (
     <section className="page-enter rounded-3xl border border-white/10 bg-[#0d0a1a]/70 p-6 sm:p-8">
@@ -327,7 +328,7 @@ function Profile({ user }) {
         <div>
           <p className="text-lg font-bold text-white">{profile.display_name || 'Unnamed traveller'}</p>
           <p className="text-sm text-white/40">{profile.username ? '@' + profile.username : 'No username yet'}</p>
-          <label className="mt-3 inline-block cursor-pointer rounded-2xl border border-white/20 px-4 py-2 text-xs font-semibold text-white transition hover:border-[#a78bfa] hover:bg-white/5">
+          <label className="mt-3 inline-block cursor-pointer rounded-2xl border border-white/20 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/5">
             {uploading ? 'Uploading...' : 'Change photo'}
             <input type="file" accept="image/*" className="hidden" onChange={uploadAvatar} disabled={uploading} />
           </label>
@@ -348,7 +349,7 @@ function Profile({ user }) {
         <textarea className={`${inputClass} min-h-28`} placeholder="Bio" value={profile.bio}
           onChange={(e) => set('bio', e.target.value)} />
 
-        <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:border-[#a78bfa]/50">
+        <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 transition">
           <input type="checkbox" className="h-5 w-5 accent-[#a78bfa]"
             checked={profile.is_seller} onChange={(e) => set('is_seller', e.target.checked)} />
           <span className="text-sm font-semibold text-white">I want to sell on Kandera</span>
@@ -371,12 +372,7 @@ function Profile({ user }) {
 function Activity({ user }) {
   const created = user.created_at ? new Date(user.created_at).toLocaleDateString() : '—';
   const last = user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString() : '—';
-
-  const rows = [
-    ['Email', user.email],
-    ['Joined', created],
-    ['Last sign in', last],
-  ];
+  const rows = [['Email', user.email], ['Joined', created], ['Last sign in', last]];
 
   return (
     <section className="page-enter space-y-4">
@@ -448,7 +444,8 @@ function SetPassword() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#06010f] px-6">
+    <main className="kd-app relative flex min-h-screen items-center justify-center overflow-hidden bg-[#06010f] px-6"
+      style={{ '--accent': VIOLET.accent, '--edge': VIOLET.edge, '--tint': VIOLET.tint }}>
       <GalaxyStyles />
       <StarField count={50} />
       <div className="relative z-10 w-full max-w-md rounded-3xl border border-white/10 bg-[#0d0a1a]/85 p-8">
@@ -474,10 +471,10 @@ function SetPassword() {
 }
 
 const TABS = [
-  { id: 'feed',     label: 'Feed',     accent: '#c4b5fd', tint: 'rgba(124,58,237,.16)',  note: 'Everything from your orbit' },
-  { id: 'browse',   label: 'Discover', accent: '#93c5fd', tint: 'rgba(37,99,235,.16)',   note: 'Places, people and listings' },
-  { id: 'messages', label: 'Messages', accent: '#f9a8d4', tint: 'rgba(219,39,119,.16)',  note: 'Your conversations' },
-  { id: 'groups',   label: 'Groups',   accent: '#67e8f9', tint: 'rgba(8,145,178,.16)',   note: 'Communities you belong to' },
+  { id: 'feed',     label: 'Feed',     accent: '#c4b5fd', edge: 'rgba(167,139,250,.32)', tint: 'rgba(124,58,237,.10)', head: 'rgba(124,58,237,.16)', note: 'Everything from your orbit' },
+  { id: 'browse',   label: 'Discover', accent: '#93c5fd', edge: 'rgba(96,165,250,.32)',  tint: 'rgba(37,99,235,.10)',  head: 'rgba(37,99,235,.16)',  note: 'Places, people and listings' },
+  { id: 'messages', label: 'Messages', accent: '#f9a8d4', edge: 'rgba(244,114,182,.32)', tint: 'rgba(219,39,119,.10)', head: 'rgba(219,39,119,.16)', note: 'Your conversations' },
+  { id: 'groups',   label: 'Groups',   accent: '#67e8f9', edge: 'rgba(34,211,238,.30)',  tint: 'rgba(8,145,178,.10)',  head: 'rgba(8,145,178,.16)',  note: 'Communities you belong to' },
 ];
 
 function Gear({ className }) {
@@ -492,23 +489,15 @@ function Gear({ className }) {
 
 function SettingsSheet({ open, onClose, onGo, onLogout, email }) {
   if (!open) return null;
-
   const groups = [
-    ['Account', [
-      ['profile', 'Edit profile'],
-      ['activity', 'Your activity'],
-    ]],
-    ['About', [
-      ['terms', 'Terms and conditions'],
-      ['privacy', 'Privacy policy'],
-    ]],
+    ['Account', [['profile', 'Edit profile'], ['activity', 'Your activity']]],
+    ['About', [['terms', 'Terms and conditions'], ['privacy', 'Privacy policy']]],
   ];
-
   return (
     <div className="fixed inset-0 z-40">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <aside className="sheet-in absolute right-0 top-0 flex h-full w-[86%] max-w-sm flex-col border-l border-white/10 bg-[#0a0716]">
-        <div className="flex items-center justify-between border-b border-white/5 px-6 py-5">
+        <div className="flex items-center justify-between border-b border-white/10 px-6 py-5">
           <div>
             <p className="text-base font-bold text-white">Settings</p>
             <p className="mt-0.5 truncate text-xs text-white/35">{email}</p>
@@ -526,7 +515,7 @@ function SettingsSheet({ open, onClose, onGo, onLogout, email }) {
                 {items.map(([id, label], i) => (
                   <button key={id} onClick={() => onGo(id)}
                     className={`block w-full px-5 py-4 text-left text-sm font-medium text-white/80 transition hover:bg-white/5 ${
-                      i ? 'border-t border-white/5' : ''
+                      i ? 'border-t border-white/10' : ''
                     }`}>
                     {label}
                   </button>
@@ -536,7 +525,7 @@ function SettingsSheet({ open, onClose, onGo, onLogout, email }) {
           ))}
         </div>
 
-        <div className="border-t border-white/5 p-4">
+        <div className="border-t border-white/10 p-4">
           <button onClick={onLogout}
             className="w-full rounded-2xl border border-rose-400/30 bg-rose-500/10 px-5 py-4 text-sm font-bold text-rose-300 transition hover:bg-rose-500/20">
             Log out
@@ -607,6 +596,7 @@ function App() {
 
   const user = session.user;
   const active = TABS.find((t) => t.id === tab) || TABS[0];
+  const theme = view ? VIOLET : active;
   const viewTitles = {
     profile: 'Edit profile',
     activity: 'Your activity',
@@ -615,18 +605,19 @@ function App() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#06010f] pb-16 text-white">
+    <main className="kd-app relative min-h-screen overflow-hidden bg-[#06010f] pb-16 text-white"
+      style={{ '--accent': theme.accent, '--edge': theme.edge, '--tint': theme.tint }}>
       <GalaxyStyles />
       <StarField count={50} />
 
-      <header className="sticky top-0 z-30 border-b border-white/5 bg-[#06010f]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-5 pb-3 pt-5">
-          <button onClick={() => { setView(null); goTab('feed', 'l'); }}
-            className="bg-gradient-to-r from-[#c4b5fd] via-white to-[#93c5fd] bg-clip-text text-xl font-black tracking-tight text-transparent">
-            KANDERA
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-[#06010f]/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-5 pb-2 pt-3">
+          <button onClick={() => { setView(null); goTab('feed', 'l'); }} aria-label="Kandera home">
+            <KOrbit size={54} uid="head" spin={80} />
           </button>
           <button onClick={() => setMenu(true)}
-            className="rounded-full p-2 text-white/45 transition hover:bg-white/5 hover:text-white">
+            className="rounded-full p-2 transition hover:bg-white/5"
+            style={{ color: theme.accent }}>
             <Gear className="h-6 w-6" />
           </button>
         </div>
@@ -677,7 +668,7 @@ function App() {
           <div key={tab + (selectedOrbit || '')} className={dir === 'r' ? 'slide-r' : 'slide-l'}>
             {!selectedOrbit && (
               <div className="mb-5 rounded-3xl border border-white/10 px-5 py-4"
-                style={{ background: active.tint }}>
+                style={{ background: active.head }}>
                 <p className="text-lg font-bold" style={{ color: active.accent }}>{active.label}</p>
                 <p className="mt-0.5 text-sm text-white/45">{active.note}</p>
               </div>
