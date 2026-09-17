@@ -56,7 +56,8 @@ export default function Feed({ user }) {
     setLoading(true);
     const { data } = await supabase
       .from('posts')
-      .select('id, author_id, caption, image_url, latitude, longitude, city, country, created_at, profiles(display_name, username, avatar_url)')
+      .select('id, author_id, caption, image_url, latitude, longitude, city, country, created_at')
+
       .order('created_at', { ascending: false })
       .limit(50);
     setPosts(data || []);
