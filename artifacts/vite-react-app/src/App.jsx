@@ -1,6 +1,3 @@
-
-import Reels from './pages/Reels.jsx';
-
 import { useEffect, useState, useRef, memo } from 'react';
 import { supabase } from './lib/supabase.js';
 import { compressImage } from './lib/compress.js';
@@ -10,6 +7,8 @@ import Listings from './pages/Listings.jsx';
 import Messages from './pages/Messages.jsx';
 import Groups from './pages/Groups.jsx';
 import Orbit from './pages/Orbit.jsx';
+import Reels from './pages/Reels.jsx';
+import { OrbitVisibility, Blocked, Deactivate } from './pages/Account.jsx';
 
 const GalaxyStyles = () => (
   <style>{`
@@ -60,7 +59,6 @@ const GalaxyStyles = () => (
     .no-bar::-webkit-scrollbar { display: none; }
     .no-bar { scrollbar-width: none; }
 
-    /* orice chenar / fundal alb din aplicatie ia culoarea paginii curente */
     .kd-app [class*="border-white/"] {
       border-color: var(--edge) !important;
       transition: border-color .35s ease;
@@ -107,7 +105,6 @@ const StarField = memo(function StarField({ count = 60 }) {
   );
 });
 
-/* ---- LOGO: planeta cu inele + K in mijloc ---- */
 function KOrbit({ size = 44, uid = 'k' }) {
   const outer = 'M 10 60 a 50 25 0 1 0 100 0 a 50 25 0 1 0 -100 0';
   const inner = 'M 22 60 a 38 15 0 1 0 76 0 a 38 15 0 1 0 -76 0';
@@ -171,7 +168,6 @@ function KOrbit({ size = 44, uid = 'k' }) {
     </svg>
   );
 }
-
 
 function AnimatedLogo() {
   return (
@@ -237,7 +233,7 @@ function Login() {
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-10 flex flex-col items-center">
           <AnimatedLogo />
-          <div className="mt-3"><KOrbit size={216} uid="login" spin={110} /></div>
+          <div className="mt-3"><KOrbit size={216} uid="login" /></div>
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-[#0d0a1a]/85 p-8">
@@ -441,7 +437,7 @@ function LegalPage({ kind }) {
     ['What we store', 'Your email, the profile details you fill in, the photos you upload and the messages you send. That is what makes the app work.'],
     ['Who can see it', 'Your profile and posts are visible to other people on Kandera. Your messages are visible only to you and the people in the conversation.'],
     ['We do not sell your data', 'Your information is not sold to advertisers or data brokers.'],
-    ['Deleting your account', 'You can ask for your account and data to be deleted at any time. Write to the support address and it will be removed.'],
+    ['Deleting your account', 'You can deactivate your account at any time from Settings. After 30 days without signing in, everything is deleted for good.'],
   ];
   const data = kind === 'terms' ? terms : privacy;
 
@@ -507,10 +503,7 @@ const TABS = [
   { id: 'browse',   label: 'Discover', accent: '#93c5fd', edge: 'rgba(96,165,250,.32)',  tint: 'rgba(37,99,235,.10)',  head: 'rgba(37,99,235,.16)',  note: 'Places, people and listings' },
   { id: 'messages', label: 'Messages', accent: '#f9a8d4', edge: 'rgba(244,114,182,.32)', tint: 'rgba(219,39,119,.10)', head: 'rgba(219,39,119,.16)', note: 'Your conversations' },
   { id: 'groups',   label: 'Groups',   accent: '#67e8f9', edge: 'rgba(34,211,238,.30)',  tint: 'rgba(8,145,178,.10)',  head: 'rgba(8,145,178,.16)',  note: 'Communities you belong to' },
-  
-  { id: 'reels', label: 'Reels', accent: '#f0abfc', edge: 'rgba(232,121,249,.30)', tint: 'rgba(192,38,211,.10)', head: 'rgba(192,38,211,.16)', note: 'Short videos, up to five minutes' },
-
-
+  { id: 'reels',    label: 'Reels',    accent: '#f0abfc', edge: 'rgba(232,121,249,.30)', tint: 'rgba(192,38,211,.10)', head: 'rgba(192,38,211,.16)', note: 'Short videos, up to five minutes' },
 ];
 
 function Gear({ className }) {
@@ -526,7 +519,12 @@ function Gear({ className }) {
 function SettingsSheet({ open, onClose, onGo, onLogout, email }) {
   if (!open) return null;
   const groups = [
-    ['Account', [['profile', 'Edit profile'], ['activity', 'Your activity']]],
+    ['Account', [
+      ['profile', 'Edit profile'],
+      ['activity', 'Your activity'],
+      ['visibility', 'Who can see you'],
+      ['blocked', 'Blocked people'],
+    ]],
     ['About', [['terms', 'Terms and conditions'], ['privacy', 'Privacy policy']]],
   ];
   return (
@@ -561,7 +559,11 @@ function SettingsSheet({ open, onClose, onGo, onLogout, email }) {
           ))}
         </div>
 
-        <div className="border-t border-white/10 p-4">
+        <div className="space-y-2 border-t border-white/10 p-4">
+          <button onClick={() => onGo('deactivate')}
+            className="w-full rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-4 text-sm font-semibold text-white/65 transition hover:text-white">
+            Deactivate account
+          </button>
           <button onClick={onLogout}
             className="w-full rounded-2xl border border-rose-400/30 bg-rose-500/10 px-5 py-4 text-sm font-bold text-rose-300 transition hover:bg-rose-500/20">
             Log out
@@ -591,6 +593,9 @@ function App() {
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
       if (event === 'PASSWORD_RECOVERY') setRecovery(true);
+      if (s?.user) {
+        supabase.from('profiles').update({ deactivated_at: null }).eq('id', s.user.id);
+      }
       setSession(s);
       setLoading(false);
     });
@@ -636,6 +641,9 @@ function App() {
   const viewTitles = {
     profile: 'Edit profile',
     activity: 'Your activity',
+    visibility: 'Who can see you',
+    blocked: 'Blocked people',
+    deactivate: 'Deactivate account',
     terms: 'Terms and conditions',
     privacy: 'Privacy policy',
   };
@@ -649,7 +657,7 @@ function App() {
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[#06010f]/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-5 pb-2 pt-3">
           <button onClick={() => { setView(null); goTab('feed', 'l'); }} aria-label="Kandera home">
-            <KOrbit size={54} uid="head" spin={80} />
+            <KOrbit size={54} uid="head" />
           </button>
           <button onClick={() => setMenu(true)}
             className="rounded-full p-2 transition hover:bg-white/5"
@@ -697,6 +705,9 @@ function App() {
 
         {view === 'profile' && <Profile user={user} />}
         {view === 'activity' && <Activity user={user} />}
+        {view === 'visibility' && <OrbitVisibility user={user} />}
+        {view === 'blocked' && <Blocked user={user} />}
+        {view === 'deactivate' && <Deactivate user={user} />}
         {view === 'terms' && <LegalPage kind="terms" />}
         {view === 'privacy' && <LegalPage kind="privacy" />}
 
@@ -718,11 +729,8 @@ function App() {
             )}
             {tab === 'browse' && <Browse user={user} />}
             {tab === 'messages' && <Messages user={user} />}
-           
             {tab === 'groups' && <Groups user={user} />}
             {tab === 'reels' && <Reels user={user} />}
-
-
           </div>
         )}
       </div>

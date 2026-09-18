@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
 import { compressImage } from '../lib/compress.js';
+
+import { Supernova } from '../lib/icons.jsx';
+
 import { OrbButton } from './Reels.jsx';
 
 const REACTIONS = [
@@ -320,10 +323,11 @@ export default function Feed({ user, openOrbit }) {
                       {p.profiles?.display_name || p.profiles?.username || 'Someone'}
                     </p>
                     {p.author_id === user.id && (
-                      <button onClick={() => deletePost(p.id)} title="Send to black hole"
-                        className="text-lg transition hover:scale-125">
-                        🕳️
-                      </button>
+                  <button onClick={() => deletePost(p.id)} title="Let it go supernova"
+                    className="transition hover:scale-125">
+                    <Supernova size={19} />
+                  </button>
+
                     )}
                   </div>
 
