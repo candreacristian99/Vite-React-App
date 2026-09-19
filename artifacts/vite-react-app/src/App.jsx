@@ -1,3 +1,6 @@
+import Market from './pages/Market.jsx';
+
+
 import { useEffect, useState, useRef, memo } from 'react';
 import { supabase } from './lib/supabase.js';
 import { compressImage } from './lib/compress.js';
@@ -727,7 +730,8 @@ function App() {
             {tab === 'feed' && selectedOrbit && (
               <Orbit user={user} orbitId={selectedOrbit} onBack={() => setSelectedOrbit(null)} />
             )}
-            {tab === 'browse' && <Browse user={user} />}
+            {tab === 'browse' && <Market user={user} />}
+
             {tab === 'messages' && <Messages user={user} />}
             {tab === 'groups' && <Groups user={user} />}
             {tab === 'reels' && <Reels user={user} />}
